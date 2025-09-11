@@ -1,46 +1,38 @@
 import React, { useState, useEffect } from 'react';
+import { getRelatedPosts } from '../services/postService';
 import { Post } from '../types';
-import { postService } from '../services/postService';
 import { Link } from 'react-router-dom';
 
 interface RelatedPostsProps {
-  tags: string[];
-  currentPostSlug: string;
+    currentPost: Post;
 }
 
-const RelatedPosts: React.FC<RelatedPostsProps> = ({ tags, currentPostSlug }) => {
-  const [relatedPosts, setRelatedPosts] = useState<Post[]>([]);
-
-  useEffect(() => {
-    const findRelatedPosts = async () => {
-      const allPosts = await postService.getAllPosts();
-      const related = allPosts.filter(post => 
-        post.slug !== currentPostSlug && 
-        post.tags.some(tag => tags.includes(tag))
-      ).slice(0, 2); // Show up to 2 related posts
-      setRelatedPosts(related);
-    };
+const RelatedPosts: React.FC<RelatedPostsProps> = ({ currentPost }) => {
+    const [posts, setPosts] = useState<Post[]>([]);
     
-    findRelatedPosts();
-  }, [tags, currentPostSlug]);
+    useEffect(() => {
+        getRelatedPosts(currentPost).then(setPosts);
+    }, [currentPost]);
 
-  if (relatedPosts.length === 0) {
-    return null;
-  }
+    if (posts.length === 0) {
+        return null;
+    }
 
-  return (
-    <div>
-      <h2 className="text-2xl font-bold mb-4">Related Posts</h2>
-      <div className="grid gap-6 sm:grid-cols-2">
-        {relatedPosts.map(post => (
-          <Link key={post.slug} to={`/post/${post.slug}`} className="block border rounded-lg p-4 hover:bg-gray-50 transition-colors">
-            <h3 className="font-bold text-lg mb-1">{post.title}</h3>
-            <p className="text-sm text-gray-600 line-clamp-2">{post.excerpt}</p>
-          </Link>
-        ))}
-      </div>
-    </div>
-  );
+    return (
+        <div style={{ marginTop: '32px' }}>
+            <h3>Related Posts</h3>
+            {posts.map(post => (
+                <div key={post.slug} style={{ marginBottom: '16px', borderLeft: '3px solid #007bff', paddingLeft: '12px' }}>
+                    <h4>
+                        <Link to={`/post/${post.slug}`} style={{ textDecoration: 'none', color: '#007bff' }}>
+                            {post.title}
+                        </Link>
+                    </h4>
+                    <p style={{ margin: '4px 0 0 0' }}>{post.excerpt}</p>
+                </div>
+            ))}
+        </div>
+    );
 };
 
 export default RelatedPosts;

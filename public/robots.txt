@@ -1,4 +1,1 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://cpb-five.vercel.app/sitemap.xml
+full contents of public/robots.txt

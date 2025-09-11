@@ -3,12 +3,13 @@ import { Link } from 'react-router-dom';
 
 const Header: React.FC = () => {
   return (
-    <header className="bg-white shadow-md sticky top-0 z-10">
-      <div className="container mx-auto px-4 py-4">
-        <Link to="/" className="text-2xl font-bold text-gray-800 hover:text-gray-600">
-          My Tech Blog
+    <header style={{ padding: '20px', backgroundColor: '#f0f0f0', borderBottom: '1px solid #ddd' }}>
+      <nav>
+        <Link to="/" style={{ textDecoration: 'none', color: '#333', fontSize: '24px', fontWeight: 'bold' }}>
+          My Awesome Blog
         </Link>
-      </div>
+        {/* Add other nav links here if needed */}
+      </nav>
     </header>
   );
 };

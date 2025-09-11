@@ -8,20 +8,23 @@ interface BlogPostCardProps {
 
 const BlogPostCard: React.FC<BlogPostCardProps> = ({ post }) => {
   return (
-    <Link to={`/post/${post.slug}`} className="block group border rounded-lg overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300 bg-white">
-      {post.featuredImageUrl && (
-        <img src={post.featuredImageUrl} alt={post.title} className="w-full h-48 object-cover" />
-      )}
-      <div className="p-6">
-        <h2 className="text-2xl font-bold mb-2 group-hover:text-blue-600">{post.title}</h2>
-        <p className="text-gray-700 mb-4">{post.excerpt}</p>
-        <div className="text-sm text-gray-500">
-          <span>{post.author.name}</span>
-          <span className="mx-2">&bull;</span>
-          <span>{new Date(post.publishDate).toLocaleDateString()}</span>
-        </div>
+    <div style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '16px', marginBottom: '16px' }}>
+      {post.imageUrl && <img src={post.imageUrl} alt={post.title} style={{ width: '100%', borderRadius: '4px' }} />}
+      <h2>
+        <Link to={`/post/${post.slug}`} style={{ textDecoration: 'none', color: '#007bff' }}>
+          {post.title}
+        </Link>
+      </h2>
+      <p style={{ color: '#666' }}>By {post.author} on {new Date(post.publishDate).toLocaleDateString()}</p>
+      <p>{post.excerpt}</p>
+      <div>
+        {post.tags.map(tag => (
+          <span key={tag} style={{ backgroundColor: '#eee', padding: '4px 8px', borderRadius: '4px', marginRight: '8px', fontSize: '12px' }}>
+            {tag}
+          </span>
+        ))}
       </div>
-    </Link>
+    </div>
   );
 };
 
