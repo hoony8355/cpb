@@ -9,7 +9,7 @@
     <meta name="naver-site-verification" content="7f6cf9d597664824b06a23c2874872c1096053a0" />
     <meta name="description" content="최고의 제품을 찾기 위한 당신의 안내서. 정직한 리뷰와 전문가의 인사이트를 통해 최신 트렌드를 확인하세요." />
 
-    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.tailwindcss.com?plugins=typography,line-clamp"></script>
     <script>
       tailwind.config = {
         theme: {
@@ -19,10 +19,6 @@
             },
           },
         },
-        plugins: [
-          require('@tailwindcss/typography'),
-          require('@tailwindcss/line-clamp'),
-        ],
       }
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -58,7 +54,7 @@
     "react-markdown": "https://esm.sh/react-markdown@9.0.1",
     "remark-gfm": "https://esm.sh/remark-gfm@4.0.0",
     "rehype-raw": "https://esm.sh/rehype-raw@7.0.0",
-    "@google/genai": "https://esm.sh/@google/genai@0.2.1",
+    "@google/genai": "https://esm.sh/@google/genai@0.12.0",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
     "react/": "https://aistudiocdn.com/react@^19.1.1/"
   }
