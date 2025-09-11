@@ -7,7 +7,7 @@ interface YouTubeEmbedProps {
 
 const YouTubeEmbed: React.FC<YouTubeEmbedProps> = ({ embedId, title }) => {
   return (
-    <div className="relative overflow-hidden my-8 shadow-lg rounded-lg" style={{ paddingTop: '56.25%' /* 16:9 Aspect Ratio */ }}>
+    <div className="relative overflow-hidden my-6 shadow-lg rounded-lg" style={{ paddingTop: '56.25%' /* 16:9 Aspect Ratio */ }}>
       <iframe
         className="absolute top-0 left-0 w-full h-full"
         src={`https://www.youtube.com/embed/${embedId}`}

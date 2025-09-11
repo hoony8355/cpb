@@ -63,5 +63,8 @@ export function getAllPosts(): Post[] {
 }
 
 export function getPostBySlug(slug: string): Post | undefined {
-  return getAllPosts().find(post => post.slug === slug);
+  if (!postsCache) {
+    getAllPosts();
+  }
+  return postsCache!.find(post => post.slug === slug);
 }

@@ -23,7 +23,9 @@ const SeoManager: React.FC<SeoManagerProps> = ({
   breadcrumbs
 }) => {
   useEffect(() => {
-    const siteUrl = window.location.origin;
+    const siteUrl = window.location.origin + window.location.pathname.split('#')[0];
+    const pageUrl = window.location.href;
+
     document.title = title;
 
     const setMeta = (propName: 'name' | 'property', propValue: string, content: string) => {
@@ -46,7 +48,7 @@ const SeoManager: React.FC<SeoManagerProps> = ({
     setMeta('property', 'og:title', title);
     setMeta('property', 'og:description', description);
     setMeta('property', 'og:type', postDate ? 'article' : 'website');
-    setMeta('property', 'og:url', window.location.href);
+    setMeta('property', 'og:url', pageUrl);
     if (coverImage) {
         setMeta('property', 'og:image', coverImage);
     }
@@ -62,22 +64,22 @@ const SeoManager: React.FC<SeoManagerProps> = ({
     }
 
     // Canonical URL
-    const canonicalLink = document.querySelector('link[rel="canonical"]') || document.createElement('link');
-    canonicalLink.setAttribute('rel', 'canonical');
-    canonicalLink.setAttribute('href', window.location.href);
-    if (!document.querySelector('link[rel="canonical"]')) {
+    let canonicalLink = document.querySelector('link[rel="canonical"]');
+    if (!canonicalLink) {
+        canonicalLink = document.createElement('link');
+        canonicalLink.setAttribute('rel', 'canonical');
         document.head.appendChild(canonicalLink);
     }
+    canonicalLink.setAttribute('href', pageUrl);
 
     // JSON-LD schema
     const schemaScriptId = 'json-ld-schema';
-    // FIX: Use a separate variable for the new script element to ensure correct typing.
-    // The type of `document.getElementById` is `HTMLElement`, which doesn't have a `type` property.
-    // By creating a new const for the script element, its type is correctly inferred as `HTMLScriptElement`.
-    const existingScript = document.getElementById(schemaScriptId);
-    if (existingScript) existingScript.remove(); // Clear previous schema
-
-    const schemaScript = document.createElement('script');
+    let schemaScript = document.getElementById(schemaScriptId) as HTMLScriptElement | null;
+    if (schemaScript) {
+      schemaScript.remove();
+    }
+    
+    schemaScript = document.createElement('script');
     schemaScript.id = schemaScriptId;
     schemaScript.type = 'application/ld+json';
     
@@ -88,6 +90,7 @@ const SeoManager: React.FC<SeoManagerProps> = ({
         schema = JSON.parse(schemaJson);
       } catch (e) {
         console.error("Failed to parse schemaJson from markdown", e);
+        schema = {};
       }
     } else if (postDate && author) { // Article schema
       schema = {
@@ -98,17 +101,18 @@ const SeoManager: React.FC<SeoManagerProps> = ({
         "image": coverImage,
         "datePublished": postDate,
         "author": {
-          "@type": author.socialLinks ? "Person" : "Organization",
+          "@type": author.socialLinks && author.socialLinks.length > 0 ? "Person" : "Organization",
           "name": author.name,
-          "url": author.socialLinks ? author.socialLinks[0] : undefined,
-          "image": author.image
+          "url": author.socialLinks && author.socialLinks.length > 0 ? author.socialLinks[0] : undefined,
+          "image": author.image,
+          "sameAs": author.socialLinks || []
         },
         "publisher": {
             "@type": "Organization",
             "name": "Trend Spotter",
             "logo": {
                 "@type": "ImageObject",
-                "url": `${siteUrl}/favicon.svg`
+                "url": `${siteUrl}logo.svg`
             }
         }
       };
@@ -122,7 +126,6 @@ const SeoManager: React.FC<SeoManagerProps> = ({
         };
     }
     
-    // Add breadcrumb schema if available
     if (breadcrumbs && breadcrumbs.length > 0) {
         const breadcrumbSchema = {
             "@context": "https://schema.org",
@@ -131,15 +134,18 @@ const SeoManager: React.FC<SeoManagerProps> = ({
                 "@type": "ListItem",
                 "position": index + 1,
                 "name": item.name,
-                "item": `${siteUrl}${item.path}`
+                "item": `${siteUrl}#${item.path}`
             }))
         };
-        // If there's already a main schema, add breadcrumbs to it in a graph
-        if (Object.keys(schema).length > 0) {
+        
+        const existingGraph = schema['@graph'];
+        if (Array.isArray(existingGraph)) {
+            existingGraph.push(breadcrumbSchema);
+        } else if (Object.keys(schema).length > 0) {
             schema = {
                 "@context": "https://schema.org",
                 "@graph": [schema, breadcrumbSchema]
-            }
+            };
         } else {
             schema = breadcrumbSchema;
         }

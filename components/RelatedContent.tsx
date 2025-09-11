@@ -7,12 +7,11 @@ interface RelatedContentProps {
 
 const RelatedContent: React.FC<RelatedContentProps> = ({ productTitle }) => {
   const [ideas, setIdeas] = useState<string[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
-    // Basic check to avoid calling API for generic titles like 'Conclusion'
+    // Basic check to avoid calling API for generic titles
     if (productTitle.length < 5 || !process.env.API_KEY) {
-        setIsLoading(false);
         return;
     }
     

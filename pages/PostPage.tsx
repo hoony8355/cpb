@@ -1,64 +1,62 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import { useParams } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useParams, Navigate } from 'react-router-dom';
+import { getPostBySlug, getAllPosts } from '../services/postService';
+import { findYouTubeVideo } from '../services/geminiService';
+import SeoManager from '../components/SeoManager';
+import AuthorBox from '../components/AuthorBox';
+import Breadcrumbs from '../components/Breadcrumbs';
+import RelatedPosts from '../components/RelatedPosts';
+import RelatedContent from '../components/RelatedContent';
+import YouTubeEmbed from '../components/YouTubeEmbed';
+import type { Post, YouTubeVideo, Breadcrumb } from '../types';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 
-import { getPostBySlug } from '../services/postService';
-import { findYouTubeVideo } from '../services/geminiService';
-import type { Post, YouTubeVideo } from '../types';
-
-import SeoManager from '../components/SeoManager';
-import AuthorBox from '../components/AuthorBox';
-import Breadcrumbs from '../components/Breadcrumbs';
-import RelatedContent from '../components/RelatedContent';
-import YouTubeEmbed from '../components/YouTubeEmbed';
 
 const PostPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const [post, setPost] = useState<Post | undefined | null>(null);
   const [video, setVideo] = useState<YouTubeVideo | null>(null);
+  const [isLoadingVideo, setIsLoadingVideo] = useState(true);
 
   useEffect(() => {
-    if (slug) {
-      const foundPost = getPostBySlug(slug);
-      setPost(foundPost);
-      setVideo(null); // Reset video when post changes
+    const foundPost = slug ? getPostBySlug(slug) : undefined;
+    setPost(foundPost);
+    if (foundPost) {
       window.scrollTo(0, 0);
-
-      if (foundPost) {
-        findYouTubeVideo(foundPost).then(setVideo);
+      if (process.env.API_KEY) {
+        setIsLoadingVideo(true);
+        findYouTubeVideo(foundPost.title, foundPost.description, foundPost.keywords)
+          .then(setVideo)
+          .finally(() => setIsLoadingVideo(false));
+      } else {
+        setIsLoadingVideo(false);
       }
     }
   }, [slug]);
 
-  const productSections = useMemo(() => {
-    if (!post) return [];
-    return post.content.split('---').map(section => section.trim());
-  }, [post]);
-
   if (post === null) {
-    return <div className="text-center py-20">Loading...</div>;
+    return <div>Loading...</div>; // Or a proper loading spinner
   }
 
   if (!post) {
-    return (
-      <div className="text-center py-20">
-        <h1 className="text-4xl font-bold">404 - Post Not Found</h1>
-        <p className="mt-4">Sorry, the post you are looking for does not exist.</p>
-      </div>
-    );
+    return <Navigate to="/404" replace />;
   }
   
-  const breadcrumbs = [
-      { name: 'Home', path: '/' },
-      { name: post.title, path: `/posts/${post.slug}` }
+  const breadcrumbs: Breadcrumb[] = [
+    { name: 'Home', path: '/' },
+    { name: post.title, path: `/posts/${post.slug}` }
   ];
+
+  // Split content by product sections (---)
+  const contentSections = post.content.split('---').map(section => section.trim());
+  const productSections = contentSections.filter(section => section.startsWith('###'));
 
   return (
     <>
       <SeoManager
-        title={post.title}
+        title={`${post.title} | Trend Spotter`}
         description={post.description}
         keywords={post.keywords.join(', ')}
         schemaJson={post.schemaJson}
@@ -67,57 +65,69 @@ const PostPage: React.FC = () => {
         coverImage={post.coverImage}
         breadcrumbs={breadcrumbs}
       />
-      <div className="max-w-4xl mx-auto">
+      <article className="max-w-4xl mx-auto">
         <Breadcrumbs items={breadcrumbs} />
-        <article>
-          <header className="mb-8">
-            <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight mb-4">{post.title}</h1>
-            <p className="text-xl text-slate-600">{post.description}</p>
-          </header>
-
-          {video && <YouTubeEmbed embedId={video.videoId} title={post.title} />}
-
-          <img 
-              src={post.coverImage} 
-              alt={`Cover image for ${post.title}`}
-              className="w-full rounded-lg shadow-lg mb-8"
-              loading="lazy"
-              decoding="async"
-          />
-
-          <div className="prose prose-lg max-w-none prose-a:text-blue-600 hover:prose-a:text-blue-800">
-            {productSections.map((section, index) => {
-              const productTitleMatch = section.match(/###\s*(.*)/);
-              const productTitle = productTitleMatch ? productTitleMatch[1] : null;
-
-              return (
-                <div key={index}>
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    rehypePlugins={[rehypeRaw]}
-                    components={{
-                      img: ({node, ...props}) => {
-                        // FIX: Ensure props.src is a string before calling split on it.
-                        const src = typeof props.src === 'string'
-                            ? props.src.split(',')[0].trim()
-                            : props.src;
-                        return <img {...props} src={src} className="rounded-lg shadow-md" loading="lazy" decoding="async" />;
-                      }
-                    }}
-                  >
-                    {section}
-                  </ReactMarkdown>
-                  {productTitle && <RelatedContent productTitle={productTitle} />}
-                </div>
-              );
-            })}
-          </div>
-        </article>
+        <header className="mb-8 text-center">
+          <h1 className="text-3xl md:text-5xl font-extrabold text-slate-900 tracking-tight mb-4">{post.title}</h1>
+          <p className="text-lg text-slate-600 max-w-3xl mx-auto">{post.description}</p>
+        </header>
         
-        <div className="mt-16 pt-8 border-t">
-          <AuthorBox author={post.author} date={post.date} />
+        <AuthorBox author={post.author} date={post.date} />
+
+        <figure className="my-8">
+            <img 
+                src={post.coverImage} 
+                alt={`Cover image for ${post.title}`}
+                className="w-full h-auto max-h-[500px] object-cover rounded-lg shadow-lg"
+                loading="lazy"
+            />
+        </figure>
+        
+        {isLoadingVideo ? (
+          <div className="text-center my-8">Loading video recommendation...</div>
+        ) : (
+          video && video.videoId && (
+            <div className='my-12 p-6 bg-slate-50 border rounded-lg'>
+              <h3 className='text-xl font-bold text-slate-800'>관련 영상 추천</h3>
+              <p className='text-slate-600 mb-4'>{video.reason}</p>
+              <YouTubeEmbed embedId={video.videoId} title={post.title} />
+            </div>
+          )
+        )}
+
+        <div className="prose prose-slate max-w-none lg:prose-lg prose-img:rounded-xl prose-img:shadow-md">
+          {productSections.map((section, index) => {
+            const titleMatch = section.match(/^### (.*)/);
+            const productTitle = titleMatch ? titleMatch[1] : `Product ${index + 1}`;
+            return (
+              <div key={index} className="product-section mb-12">
+                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={{
+                  img: ({node, ...props}) => {
+                    // FIX: The src prop can be a Blob, which doesn't have a 'split' method. Added a type check.
+                    let finalSrc = props.src;
+                    if (typeof props.src === 'string') {
+                      finalSrc = props.src.split(',')[0].trim();
+                    }
+                    return <img {...props} src={finalSrc} className="mx-auto" />
+                  }
+                }}>
+                  {section}
+                </ReactMarkdown>
+                <RelatedContent productTitle={productTitle} />
+              </div>
+            );
+          })}
         </div>
-      </div>
+        
+        <hr className="my-16 border-slate-200" />
+        
+        <RelatedPosts currentPost={post} />
+        
+        <hr className="my-16 border-slate-200" />
+        
+        <AuthorBox author={post.author} date={post.date} />
+
+      </article>
     </>
   );
 };
