@@ -1,20 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { getPostBySlug } from '../services/postService';
-import { Post, YouTubeVideo } from '../types';
+import { Post } from '../types';
 import SeoManager from '../components/SeoManager';
 import AuthorBox from '../components/AuthorBox';
 import NotFoundPage from './NotFoundPage';
 import Breadcrumbs from '../components/Breadcrumbs';
-import YouTubeEmbed from '../components/YouTubeEmbed';
 import RelatedPosts from '../components/RelatedPosts';
-import { findYouTubeVideo } from '../services/geminiService';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
+import ProductSection from '../components/ProductSection';
+import FaqSection from '../components/FaqSection';
 
 const PostPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const [post, setPost] = useState<Post | null>(null);
   const [loading, setLoading] = useState(true);
-  const [video, setVideo] = useState<YouTubeVideo | null>(null);
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -27,9 +29,6 @@ const PostPage: React.FC = () => {
       try {
         const fetchedPost = await getPostBySlug(slug);
         setPost(fetchedPost);
-        if (fetchedPost) {
-          findYouTubeVideo(fetchedPost).then(setVideo);
-        }
       } catch (error) {
         console.error("Failed to fetch post:", error);
         setPost(null);
@@ -37,7 +36,6 @@ const PostPage: React.FC = () => {
         setLoading(false);
       }
     };
-
     fetchPost();
   }, [slug]);
 
@@ -52,48 +50,51 @@ const PostPage: React.FC = () => {
   return (
     <>
       <SeoManager post={post} />
-      <div className="container mx-auto px-4 py-8">
-        <article className="max-w-3xl mx-auto">
-          <Breadcrumbs postTitle={post.title} />
-          <header className="mb-8">
-            <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-3">{post.title}</h1>
-            <p className="text-gray-500 text-sm">
-              Posted on {new Date(post.date).toLocaleDateString()} by {post.author.name}
-            </p>
-          </header>
-          
-          {post.coverImage && (
-              <img 
-                  src={post.coverImage} 
-                  alt={`Cover for ${post.title}`} 
-                  className="w-full h-auto rounded-lg mb-8"
-                  loading="lazy"
-                  decoding="async"
-              />
-          )}
+        <main className="container mx-auto p-4 md:p-8">
+            <article className="bg-white shadow-lg rounded-lg p-6 md:p-10">
+                <header className="text-center border-b pb-8 mb-8">
+                    <Breadcrumbs postTitle={post.title} />
+                    <h1 className="text-3xl md:text-4xl font-extrabold text-slate-800 leading-tight">{post.title}</h1>
+                    <p className="mt-4 text-lg text-slate-500 max-w-3xl mx-auto">{post.description}</p>
+                     <p className="text-gray-500 text-sm mt-4">
+                        Published on {new Date(post.date).toLocaleDateString()} by {post.author.name}
+                    </p>
+                </header>
 
-          {/* 
-            This renders the post content as HTML. It's assumed that the markdown
-            from .md files is converted to HTML during a build process.
-            The `prose` class from Tailwind's typography plugin styles the output.
-          */}
-          <div className="prose lg:prose-lg max-w-none mb-12" dangerouslySetInnerHTML={{ __html: post.content }} />
-          
-          {video && (
-            <div className="my-8 bg-gray-100 p-6 rounded-lg">
-              <h3 className="text-2xl font-bold text-gray-800 mb-2">추천 영상</h3>
-              <p className="text-gray-600 mb-4">{video.reason}</p>
-              <YouTubeEmbed embedId={video.id} title={post.title} />
+                <div className="prose prose-slate max-w-none lg:prose-lg">
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                        {post.intro}
+                    </ReactMarkdown>
+
+                    {post.products.length > 0 && (
+                        <>
+                            <h2 className="text-2xl md:text-3xl font-bold mt-12 mb-6 text-center">Top Products Review</h2>
+                            {post.products.map((product, index) => (
+                                <ProductSection key={index} product={product} index={index + 1} />
+                            ))}
+                        </>
+                    )}
+
+                    {post.conclusion && (
+                         <>
+                            <h2 className="text-2xl md:text-3xl font-bold mt-12 mb-6 border-t pt-8">결론</h2>
+                            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                                {post.conclusion}
+                            </ReactMarkdown>
+                        </>
+                    )}
+                </div>
+
+
+                {post.faq.length > 0 && <FaqSection faqItems={post.faq} />}
+
+                <AuthorBox author={post.author} />
+            </article>
+            
+             <div className="max-w-5xl mx-auto mt-12">
+                <RelatedPosts currentPost={post} />
             </div>
-          )}
-
-          <AuthorBox author={post.author} />
-        </article>
-        
-        <div className="max-w-5xl mx-auto">
-          <RelatedPosts currentPost={post} />
-        </div>
-      </div>
+        </main>
     </>
   );
 };
