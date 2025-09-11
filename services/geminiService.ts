@@ -1,94 +1,101 @@
 import { GoogleGenAI, Type } from "@google/genai";
-import type { Post } from "../types";
+import type { Post, YouTubeVideo } from "../types";
 
-// This file must have an API key set in the environment to work.
-if (!process.env.API_KEY) {
+// Fallback if API key is not provided in the environment
+const API_KEY = process.env.API_KEY;
+
+if (!API_KEY) {
   console.warn(
-    "API_KEY environment variable not set. Related content feature will be disabled."
+    "API_KEY environment variable not set. AI features will be disabled."
   );
 }
 
-// FIX: Initialize GoogleGenAI with a named apiKey parameter as required by the new SDK.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: API_KEY! });
+const model = "gemini-2.5-flash";
 
-const responseSchema = {
-  type: Type.ARRAY,
-  items: {
-    type: Type.OBJECT,
-    properties: {
-      slug: {
-        type: Type.STRING,
-        description: "The unique slug of the related blog post.",
-      },
-      title: {
-        type: Type.STRING,
-        description: "The title of the related blog post.",
-      },
-      reason: {
-        type: Type.STRING,
-        description:
-          "A brief, compelling reason (under 15 words) why this post is a good recommendation for the reader.",
-      },
-    },
-    required: ["slug", "title", "reason"],
-  },
-};
-
-export async function findRelatedPosts(currentPost: Post, allPosts: Post[]) {
-  if (!process.env.API_KEY) {
-    return [];
-  }
-
-  // Filter out the current post from the list of potential related posts.
-  const otherPosts = allPosts
-    .filter((p) => p.slug !== currentPost.slug)
-    .map(({ slug, title, description }) => ({ slug, title, description }));
-
-  if (otherPosts.length === 0) {
-    return [];
-  }
+export async function findYouTubeVideo(post: Post): Promise<YouTubeVideo | null> {
+  if (!API_KEY) return null;
 
   const prompt = `
-    Based on the current blog post titled "${
-      currentPost.title
-    }" with the description "${
-    currentPost.description
-  }", please recommend up to 3 related posts from the following list.
+    Based on the following blog post title and description, find the most relevant and helpful YouTube video ID.
+    The video should be high-quality and directly related to the main topic of the post.
+    
+    Title: "${post.title}"
+    Description: "${post.description}"
 
-    For each recommendation, provide the post's slug, title, and a short, engaging reason (under 15 words) explaining why someone who liked the current article would find it interesting.
-    Do not recommend the original post.
-
-    Available posts:
-    ${JSON.stringify(otherPosts, null, 2)}
-
-    Return your answer as a JSON array of objects.
+    Return ONLY a JSON object with the following structure: {"videoId": "YOUTUBE_VIDEO_ID", "reason": "A brief explanation of why this video is relevant."}.
+    Do not include any other text or markdown formatting.
   `;
 
   try {
-    // FIX: Use the 'gemini-2.5-flash' model for general text tasks as per guidelines.
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model,
       contents: prompt,
       config: {
         responseMimeType: "application/json",
-        responseSchema: responseSchema,
+        responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+                videoId: { type: Type.STRING },
+                reason: { type: Type.STRING }
+            },
+            required: ["videoId", "reason"]
+        }
       },
     });
 
-    // FIX: Extract text directly from response.text and parse it, which is the correct way to get the content.
     const jsonText = response.text.trim();
-    if (!jsonText) {
-        console.warn("Gemini API returned an empty response for related posts.");
-        return [];
-    }
-    const related = JSON.parse(jsonText);
+    if (!jsonText) return null;
     
-    // Ensure the result is an array before returning.
-    return Array.isArray(related) ? related : [];
+    return JSON.parse(jsonText);
 
   } catch (error) {
-    console.error("Error fetching related posts from Gemini API:", error);
-    // Return an empty array on error to prevent the UI from breaking.
-    return [];
+    console.error("Error fetching YouTube video from Gemini API:", error);
+    return null;
   }
+}
+
+export async function generateRelatedContentIdeas(productTitle: string): Promise<string[]> {
+    if (!API_KEY) return [];
+
+    const prompt = `
+    You are an expert SEO and content strategist.
+    A user is viewing a product named "${productTitle}".
+    Generate a list of 3 highly engaging and SEO-friendly blog post titles or topics that are related to this product.
+    These topics should help the user make a better purchasing decision or get more value out of the product.
+
+    Return ONLY a JSON object with a single key "ideas" which is an array of 3 strings.
+    Example: {"ideas": ["Idea 1", "Idea 2", "Idea 3"]}
+    Do not include any other text or markdown formatting.
+    `;
+
+    try {
+        const response = await ai.models.generateContent({
+            model,
+            contents: prompt,
+            config: {
+              responseMimeType: "application/json",
+              responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                    ideas: {
+                        type: Type.ARRAY,
+                        items: { type: Type.STRING }
+                    }
+                },
+                required: ["ideas"]
+              }
+            },
+        });
+
+        const jsonText = response.text.trim();
+        if (!jsonText) return [];
+        
+        const result = JSON.parse(jsonText);
+        return result.ideas || [];
+
+    } catch (error) {
+        console.error("Error generating related content from Gemini API:", error);
+        return [];
+    }
 }

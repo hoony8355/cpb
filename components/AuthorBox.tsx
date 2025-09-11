@@ -7,18 +7,35 @@ interface AuthorBoxProps {
 }
 
 const AuthorBox: React.FC<AuthorBoxProps> = ({ author, date }) => {
+  const formattedDate = new Date(date).toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+
   return (
-    <div className="flex items-center bg-slate-50 p-4 rounded-lg">
+    <div className="flex items-start bg-slate-50 p-6 rounded-lg">
       <img
-        src={author.avatar}
+        src={author.image}
         alt={author.name}
-        className="w-14 h-14 rounded-full mr-4"
+        className="w-16 h-16 rounded-full mr-5 object-cover"
+        loading="lazy"
+        decoding="async"
       />
-      <div>
-        <p className="font-bold text-slate-800">{author.name}</p>
-        <p className="text-sm text-slate-500">
-          Published on <time dateTime={date}>{new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</time>
-        </p>
+      <div className="flex-1">
+        <p className="text-sm text-slate-500">Written by</p>
+        <p className="font-bold text-lg text-slate-800">{author.name}</p>
+        <p className="text-sm text-slate-600 mt-2">{author.bio}</p>
+        <div className="flex items-center justify-between mt-3 text-sm text-slate-500">
+          <p>
+            Published on <time dateTime={date}>{formattedDate}</time>
+          </p>
+          {author.socialLinks && author.socialLinks.length > 0 && (
+             <a href={author.socialLinks[0]} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 font-semibold">
+                Follow
+             </a>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,59 +1,156 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
+import type { Author, Breadcrumb } from '../types';
 
 interface SeoManagerProps {
   title: string;
   description: string;
   keywords?: string;
   schemaJson?: string;
+  author?: Author;
+  postDate?: string;
+  coverImage?: string;
+  breadcrumbs?: Breadcrumb[];
 }
 
-const SeoManager: React.FC<SeoManagerProps> = ({ title, description, keywords, schemaJson }) => {
+const SeoManager: React.FC<SeoManagerProps> = ({ 
+  title, 
+  description, 
+  keywords, 
+  schemaJson,
+  author,
+  postDate,
+  coverImage,
+  breadcrumbs
+}) => {
   useEffect(() => {
+    const siteUrl = window.location.origin;
     document.title = title;
 
-    const setMeta = (name: string, content: string) => {
-      let element = document.querySelector(`meta[name="${name}"]`);
+    const setMeta = (propName: 'name' | 'property', propValue: string, content: string) => {
+      let element = document.querySelector(`meta[${propName}="${propValue}"]`);
       if (!element) {
         element = document.createElement('meta');
-        element.setAttribute('name', name);
+        element.setAttribute(propName, propValue);
         document.head.appendChild(element);
       }
       element.setAttribute('content', content);
     };
 
-    setMeta('description', description);
+    // Standard meta
+    setMeta('name', 'description', description);
     if (keywords) {
-      setMeta('keywords', keywords);
+      setMeta('name', 'keywords', keywords);
     }
-    
-    // Handle JSON-LD schema
+
+    // Open Graph (for social sharing)
+    setMeta('property', 'og:title', title);
+    setMeta('property', 'og:description', description);
+    setMeta('property', 'og:type', postDate ? 'article' : 'website');
+    setMeta('property', 'og:url', window.location.href);
+    if (coverImage) {
+        setMeta('property', 'og:image', coverImage);
+    }
+    setMeta('property', 'og:locale', 'ko_KR');
+
+
+    // Twitter Card
+    setMeta('name', 'twitter:card', 'summary_large_image');
+    setMeta('name', 'twitter:title', title);
+    setMeta('name', 'twitter:description', description);
+    if (coverImage) {
+        setMeta('name', 'twitter:image', coverImage);
+    }
+
+    // Canonical URL
+    const canonicalLink = document.querySelector('link[rel="canonical"]') || document.createElement('link');
+    canonicalLink.setAttribute('rel', 'canonical');
+    canonicalLink.setAttribute('href', window.location.href);
+    if (!document.querySelector('link[rel="canonical"]')) {
+        document.head.appendChild(canonicalLink);
+    }
+
+    // JSON-LD schema
     const schemaScriptId = 'json-ld-schema';
-    let schemaScript = document.getElementById(schemaScriptId);
+    // FIX: Use a separate variable for the new script element to ensure correct typing.
+    // The type of `document.getElementById` is `HTMLElement`, which doesn't have a `type` property.
+    // By creating a new const for the script element, its type is correctly inferred as `HTMLScriptElement`.
+    const existingScript = document.getElementById(schemaScriptId);
+    if (existingScript) existingScript.remove(); // Clear previous schema
+
+    const schemaScript = document.createElement('script');
+    schemaScript.id = schemaScriptId;
+    schemaScript.type = 'application/ld+json';
+    
+    let schema: any = {};
 
     if (schemaJson) {
-      if (!schemaScript) {
-        schemaScript = document.createElement('script');
-        schemaScript.id = schemaScriptId;
-        schemaScript.type = 'application/ld+json';
-        document.head.appendChild(schemaScript);
+      try {
+        schema = JSON.parse(schemaJson);
+      } catch (e) {
+        console.error("Failed to parse schemaJson from markdown", e);
       }
-      schemaScript.innerHTML = schemaJson;
-    } else if (schemaScript) {
-      // Remove script if it exists but no schema is provided for the current page
-      schemaScript.remove();
+    } else if (postDate && author) { // Article schema
+      schema = {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "headline": title,
+        "description": description,
+        "image": coverImage,
+        "datePublished": postDate,
+        "author": {
+          "@type": author.socialLinks ? "Person" : "Organization",
+          "name": author.name,
+          "url": author.socialLinks ? author.socialLinks[0] : undefined,
+          "image": author.image
+        },
+        "publisher": {
+            "@type": "Organization",
+            "name": "Trend Spotter",
+            "logo": {
+                "@type": "ImageObject",
+                "url": `${siteUrl}/favicon.svg`
+            }
+        }
+      };
+    } else { // Website schema for homepage
+        schema = {
+            "@context": "https://schema.org",
+            "@type": "WebSite",
+            "url": siteUrl,
+            "name": "Trend Spotter",
+            "description": description
+        };
     }
     
-    // Cleanup function to remove schema when component unmounts
-    return () => {
-        const schemaScriptToRemove = document.getElementById(schemaScriptId);
-        if (schemaScriptToRemove) {
-          schemaScriptToRemove.remove();
+    // Add breadcrumb schema if available
+    if (breadcrumbs && breadcrumbs.length > 0) {
+        const breadcrumbSchema = {
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            "itemListElement": breadcrumbs.map((item, index) => ({
+                "@type": "ListItem",
+                "position": index + 1,
+                "name": item.name,
+                "item": `${siteUrl}${item.path}`
+            }))
+        };
+        // If there's already a main schema, add breadcrumbs to it in a graph
+        if (Object.keys(schema).length > 0) {
+            schema = {
+                "@context": "https://schema.org",
+                "@graph": [schema, breadcrumbSchema]
+            }
+        } else {
+            schema = breadcrumbSchema;
         }
-    };
+    }
 
-  }, [title, description, keywords, schemaJson]);
+    schemaScript.innerHTML = JSON.stringify(schema, null, 2);
+    document.head.appendChild(schemaScript);
 
-  return null; // This component does not render anything to the DOM
+  }, [title, description, keywords, schemaJson, author, postDate, coverImage, breadcrumbs]);
+
+  return null;
 };
 
 export default SeoManager;

@@ -1,54 +1,59 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
+
 import { getPostBySlug } from '../services/postService';
-import type { Post } from '../types';
+import { findYouTubeVideo } from '../services/geminiService';
+import type { Post, YouTubeVideo } from '../types';
+
 import SeoManager from '../components/SeoManager';
 import AuthorBox from '../components/AuthorBox';
 import Breadcrumbs from '../components/Breadcrumbs';
 import RelatedContent from '../components/RelatedContent';
+import YouTubeEmbed from '../components/YouTubeEmbed';
 
 const PostPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const [post, setPost] = useState<Post | undefined | null>(null);
+  const [video, setVideo] = useState<YouTubeVideo | null>(null);
 
   useEffect(() => {
     if (slug) {
       const foundPost = getPostBySlug(slug);
       setPost(foundPost);
-      // Scroll to top when post changes
+      setVideo(null); // Reset video when post changes
       window.scrollTo(0, 0);
+
+      if (foundPost) {
+        findYouTubeVideo(foundPost).then(setVideo);
+      }
     }
   }, [slug]);
-  
-  // A simple markdown to HTML converter to render content.
-  const markdownToHtml = (markdown: string) => {
-    let html = '';
-    const blocks = markdown.split(/\n\s*\n/);
-    blocks.forEach(block => {
-      if (block.startsWith('### ')) {
-        html += `<h3 class="text-2xl font-bold mt-8 mb-4 text-slate-800">${block.substring(4)}</h3>`;
-      } else if (block.startsWith('## ')) {
-        html += `<h2 class="text-3xl font-bold mt-10 mb-6 text-slate-900 border-b pb-2">${block.substring(3)}</h2>`;
-      } else if (block.trim()) {
-        html += `<p class="text-lg text-slate-700 leading-relaxed mb-4">${block.replace(/\n/g, '<br/>')}</p>`;
-      }
-    });
-    return html;
-  };
+
+  const productSections = useMemo(() => {
+    if (!post) return [];
+    return post.content.split('---').map(section => section.trim());
+  }, [post]);
 
   if (post === null) {
-    return <div>Loading...</div>; // Or a spinner component
+    return <div className="text-center py-20">Loading...</div>;
   }
 
   if (!post) {
-    // A simple 404-like message
     return (
-        <div className="text-center py-20">
-            <h1 className="text-4xl font-bold">404 - Post Not Found</h1>
-            <p className="mt-4">Sorry, the post you are looking for does not exist.</p>
-        </div>
+      <div className="text-center py-20">
+        <h1 className="text-4xl font-bold">404 - Post Not Found</h1>
+        <p className="mt-4">Sorry, the post you are looking for does not exist.</p>
+      </div>
     );
   }
+  
+  const breadcrumbs = [
+      { name: 'Home', path: '/' },
+      { name: post.title, path: `/posts/${post.slug}` }
+  ];
 
   return (
     <>
@@ -57,27 +62,61 @@ const PostPage: React.FC = () => {
         description={post.description}
         keywords={post.keywords.join(', ')}
         schemaJson={post.schemaJson}
+        author={post.author}
+        postDate={post.date}
+        coverImage={post.coverImage}
+        breadcrumbs={breadcrumbs}
       />
       <div className="max-w-4xl mx-auto">
-        <Breadcrumbs postTitle={post.title} />
+        <Breadcrumbs items={breadcrumbs} />
         <article>
           <header className="mb-8">
             <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight mb-4">{post.title}</h1>
             <p className="text-xl text-slate-600">{post.description}</p>
-            <div className="mt-6">
-              <AuthorBox author={post.author} date={post.date} />
-            </div>
           </header>
 
-          <img src={post.coverImage} alt={post.title} className="w-full rounded-lg shadow-lg mb-8" />
+          {video && <YouTubeEmbed embedId={video.videoId} title={post.title} />}
 
-          <div 
-            className="prose prose-lg max-w-none" 
-            dangerouslySetInnerHTML={{ __html: markdownToHtml(post.content) }}
+          <img 
+              src={post.coverImage} 
+              alt={`Cover image for ${post.title}`}
+              className="w-full rounded-lg shadow-lg mb-8"
+              loading="lazy"
+              decoding="async"
           />
+
+          <div className="prose prose-lg max-w-none prose-a:text-blue-600 hover:prose-a:text-blue-800">
+            {productSections.map((section, index) => {
+              const productTitleMatch = section.match(/###\s*(.*)/);
+              const productTitle = productTitleMatch ? productTitleMatch[1] : null;
+
+              return (
+                <div key={index}>
+                  <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
+                    rehypePlugins={[rehypeRaw]}
+                    components={{
+                      img: ({node, ...props}) => {
+                        // FIX: Ensure props.src is a string before calling split on it.
+                        const src = typeof props.src === 'string'
+                            ? props.src.split(',')[0].trim()
+                            : props.src;
+                        return <img {...props} src={src} className="rounded-lg shadow-md" loading="lazy" decoding="async" />;
+                      }
+                    }}
+                  >
+                    {section}
+                  </ReactMarkdown>
+                  {productTitle && <RelatedContent productTitle={productTitle} />}
+                </div>
+              );
+            })}
+          </div>
         </article>
         
-        <RelatedContent currentPost={post} />
+        <div className="mt-16 pt-8 border-t">
+          <AuthorBox author={post.author} date={post.date} />
+        </div>
       </div>
     </>
   );
