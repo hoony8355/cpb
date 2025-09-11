@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="ko">
   <head>
@@ -6,10 +5,16 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Coupang Partners Blog</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- SEO & Site Verification -->
+    <meta name="description" content="최신 트렌드 제품 리뷰와 추천. 쿠팡 파트너스 활동을 통해 제공되는 정직한 정보와 인사이트를 확인하세요." />
+    <meta name="google-site-verification" content="zh4YHpWcV7xB4GoBxLb6p2ns874kC7P_pFwHxxZEqog" />
+    <meta name="naver-site-verification" content="7f6cf9d597664824b06a23c2874872c1096053a0" />
+
+    <script src="https://cdn.tailwindcss.com?plugins=typography,line-clamp"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap" rel="stylesheet">
     <script>
       tailwind.config = {
         theme: {
@@ -19,15 +24,29 @@
             },
           },
         },
-        plugins: [
-          require('@tailwindcss/typography'),
-        ],
       }
     </script>
     <style>
-      /* Apply Noto Sans KR as the default font */
       body {
         font-family: 'Noto Sans KR', sans-serif;
+      }
+      /* Custom styles to ensure Coupang partner links are styled as buttons */
+      .prose a[rel~="sponsored"] {
+        display: inline-block !important;
+        background-color: #0073e6 !important;
+        color: white !important;
+        font-weight: bold !important;
+        padding: 12px 24px !important;
+        border-radius: 8px !important;
+        text-align: center !important;
+        text-decoration: none !important;
+        margin-top: 1rem !important;
+        margin-bottom: 1rem !important;
+        transition: background-color 0.2s ease-in-out;
+      }
+      .prose a[rel~="sponsored"]:hover {
+        background-color: #005bb5 !important;
+        color: white !important;
       }
     </style>
   <script type="importmap">

@@ -1,4 +1,3 @@
-
 export interface Post {
   slug: string;
   title: string;
@@ -6,4 +5,5 @@ export interface Post {
   description: string;
   keywords: string[];
   content: string;
+  coverImage?: string;
 }

@@ -1,4 +1,3 @@
-
 export interface Frontmatter {
   [key: string]: string | string[];
 }
@@ -21,17 +20,17 @@ export function parseMarkdown(rawContent: string): ParsedMarkdown {
   const frontmatter: Frontmatter = {};
 
   frontmatterRaw.split('\n').forEach(line => {
-    const parts = line.split(':');
-    const key = parts[0]?.trim();
-    const value = parts.slice(1).join(':').trim();
+    const delimiterIndex = line.indexOf(':');
+    if (delimiterIndex > -1) {
+      const key = line.slice(0, delimiterIndex).trim();
+      const value = line.slice(delimiterIndex + 1).trim();
 
-    if (key && value) {
-      // Handle keywords array specifically
-      if (key === 'keywords' && value.startsWith('[') && value.endsWith(']')) {
-        frontmatter[key] = value.slice(1, -1).split(',').map(k => k.trim().replace(/^"|"$/g, ''));
-      } else {
-        // Remove quotes from string values
-        frontmatter[key] = value.replace(/^['"]|['"]$/g, '');
+      if (key && value) {
+        if (key === 'keywords' && value.startsWith('[') && value.endsWith(']')) {
+          frontmatter[key] = value.slice(1, -1).split(',').map(k => k.trim().replace(/^"|"$/g, ''));
+        } else {
+          frontmatter[key] = value.replace(/^['"]|['"]$/g, '');
+        }
       }
     }
   });

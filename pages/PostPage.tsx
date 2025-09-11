@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
@@ -6,6 +5,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { getPostBySlug } from '../services/postService';
 import type { Post } from '../types';
+import SeoManager from '../components/SeoManager';
 
 const PostPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -28,25 +28,34 @@ const PostPage: React.FC = () => {
   }
 
   return (
-    <article>
-      <header className="mb-8 border-b pb-8">
-        <h1 className="text-4xl font-extrabold text-gray-900 leading-tight mb-4">{post.title}</h1>
-        <p className="text-gray-500">{new Date(post.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {post.keywords.map(keyword => (
-            <span key={keyword} className="bg-slate-100 text-slate-700 text-xs font-semibold px-2.5 py-0.5 rounded-full">
-              {keyword}
-            </span>
-          ))}
+    <>
+      <SeoManager 
+        title={`${post.title} | Trend Spotter`}
+        description={post.description}
+        keywords={post.keywords}
+        imageUrl={post.coverImage}
+        post={post}
+      />
+      <article className="bg-white p-6 sm:p-8 lg:p-12 rounded-2xl shadow-lg">
+        <header className="mb-8 text-center border-b border-slate-200 pb-8">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight mb-4">{post.title}</h1>
+          <p className="text-slate-500">{new Date(post.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+          <div className="mt-6 flex flex-wrap gap-2 justify-center">
+            {post.keywords.map(keyword => (
+              <span key={keyword} className="bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">
+                #{keyword.replace(/\s+/g, '')}
+              </span>
+            ))}
+          </div>
+        </header>
+        
+        <div className="prose prose-lg max-w-none prose-img:rounded-xl prose-img:mx-auto prose-a:text-blue-600 hover:prose-a:text-blue-800">
+          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+            {post.content}
+          </ReactMarkdown>
         </div>
-      </header>
-      
-      <div className="prose prose-lg max-w-none prose-img:rounded-xl prose-img:mx-auto prose-a:text-blue-600 hover:prose-a:text-blue-800">
-        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
-          {post.content}
-        </ReactMarkdown>
-      </div>
-    </article>
+      </article>
+    </>
   );
 };
 

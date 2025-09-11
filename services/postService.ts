@@ -1,9 +1,14 @@
-
 import type { Post } from '../types';
 import { parseMarkdown } from './markdownParser';
 import type { Frontmatter } from './markdownParser';
 
 let postsCache: Post[] | null = null;
+
+function extractCoverImage(content: string): string | undefined {
+  const imageRegex = /!\[.*?\]\((.*?)\)/;
+  const match = content.match(imageRegex);
+  return match?.[1];
+}
 
 export function getAllPosts(): Post[] {
   if (postsCache) {
@@ -24,6 +29,7 @@ export function getAllPosts(): Post[] {
       description: (fm.description as string) || '',
       keywords: (fm.keywords as string[]) || [],
       content,
+      coverImage: extractCoverImage(content),
     };
   });
 
