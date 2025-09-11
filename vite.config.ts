@@ -29,9 +29,10 @@ export default defineConfig(({ mode }) => {
       sitemap({
         hostname: 'https://cpb-five.vercel.app',
         dynamicRoutes,
-        // The 'robots' option has been removed to fix a build crash.
-        // Vite will automatically copy the existing 'public/robots.txt' file,
-        // which prevents a conflict with the sitemap plugin.
+        // FIX: Explicitly provide an empty array to prevent the sitemap plugin
+        // from generating its own robots.txt, which was causing a build error.
+        // This ensures the static robots.txt from the `public` directory is used instead.
+        robots: [],
       }),
     ],
     define: {
