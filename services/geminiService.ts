@@ -1,18 +1,18 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { Post, YouTubeVideo } from "../types";
 
-const apiKey = process.env.API_KEY;
-let ai: GoogleGenAI | null = null;
-
-if (apiKey) {
-    ai = new GoogleGenAI({ apiKey });
-} else {
-    console.warn("API_KEY environment variable not set. AI features will be disabled.");
-}
+// FIX: Align with Gemini API guidelines for initialization.
+// The API key is assumed to be available in process.env, so we initialize the client directly.
+// The `as string` cast is used to satisfy the constructor's type requirement,
+// with the understanding that the build process ensures the key's presence.
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
 
 export const findYouTubeVideo = async (post: Post): Promise<YouTubeVideo | null> => {
-    if (!ai) return null;
+    // FIX: Add a runtime check for the API key to prevent errors and gracefully degrade.
+    if (!process.env.API_KEY) {
+        console.warn("API_KEY not provided. Skipping YouTube video search.");
+        return null;
+    }
     try {
         const prompt = `Find the most relevant YouTube video for a blog post titled "${post.title}" with keywords: ${post.keywords.join(', ')}. The post is about ${post.description}. Return only a JSON object with "id" (the YouTube video ID) and "reason" (a short, compelling reason for recommending it).`;
         const response = await ai.models.generateContent({
@@ -39,7 +39,11 @@ export const findYouTubeVideo = async (post: Post): Promise<YouTubeVideo | null>
 };
 
 export const generateRelatedContentIdeas = async (productName: string): Promise<string[]> => {
-    if (!ai) return [];
+    // FIX: Add a runtime check for the API key to prevent errors and gracefully degrade.
+    if (!process.env.API_KEY) {
+        console.warn("API_KEY not provided. Skipping related content generation.");
+        return [];
+    }
     try {
         const prompt = `You are an expert SEO content strategist. For the product "${productName}", generate 3 compelling, related blog post titles that a user might be interested in. Return only a JSON array of strings.`;
         const response = await ai.models.generateContent({
@@ -63,7 +67,13 @@ export const generateRelatedContentIdeas = async (productName: string): Promise<
 
 
 export const findRelatedPosts = async (currentPost: Post, allPosts: Post[]): Promise<Post[]> => {
-    if (!ai || allPosts.length <= 1) return [];
+    // FIX: Add a runtime check for the API key to prevent errors and gracefully degrade.
+    if (!process.env.API_KEY || allPosts.length <= 1) {
+        if (!process.env.API_KEY) {
+            console.warn("API_KEY not provided. Skipping related post search.");
+        }
+        return [];
+    }
 
     try {
         const otherPosts = allPosts

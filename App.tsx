@@ -1,5 +1,7 @@
 import React, { Suspense, lazy } from 'react';
 import { HashRouter as Router, Routes, Route } from 'react-router-dom';
+// FIX: Import HelmetProvider to wrap the application for SEO management.
+import { HelmetProvider } from 'react-helmet-async';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import usePageTracking from './hooks/usePageTracking';
@@ -32,15 +34,18 @@ const AppContent: React.FC = () => {
  */
 const App: React.FC = () => {
   return (
-    <Router>
-      <div className="flex flex-col min-h-screen bg-gray-50 font-sans">
-        <Header />
-        <main className="flex-grow">
-          <AppContent />
-        </main>
-        <Footer />
-      </div>
-    </Router>
+    // FIX: Wrap the entire application in HelmetProvider.
+    <HelmetProvider>
+      <Router>
+        <div className="flex flex-col min-h-screen bg-gray-50 font-sans">
+          <Header />
+          <main className="flex-grow">
+            <AppContent />
+          </main>
+          <Footer />
+        </div>
+      </Router>
+    </HelmetProvider>
   );
 };
 
