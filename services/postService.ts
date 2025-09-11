@@ -1,3 +1,5 @@
+// FIX: Add a triple-slash directive to include Vite's client types. This resolves errors with `import.meta.glob` and ensures module contents are correctly typed as strings.
+/// <reference types="vite/client" />
 
 import { Post } from '../types';
 import { parseMarkdown } from './markdownParser';

@@ -1,18 +1,28 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Post, YouTubeVideo } from "../types";
 
-// FIX: Align with Gemini API guidelines for initialization.
-// The API key is assumed to be available in process.env, so we initialize the client directly.
-// The `as string` cast is used to satisfy the constructor's type requirement,
-// with the understanding that the build process ensures the key's presence.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+// FIX: Lazily initialize the GoogleGenAI client to avoid a crash on startup if the API_KEY is missing.
+// This allows the application to run with Gemini features gracefully disabled.
+let aiClient: GoogleGenAI | null = null;
+
+const getAiClient = (): GoogleGenAI | null => {
+    if (aiClient === null) { // Only attempt to initialize once
+        if (process.env.API_KEY) {
+            aiClient = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        } else {
+            console.warn("API_KEY not provided. Gemini services will be disabled.");
+            // Keep aiClient as null to indicate it's not available
+        }
+    }
+    return aiClient;
+};
 
 export const findYouTubeVideo = async (post: Post): Promise<YouTubeVideo | null> => {
-    // FIX: Add a runtime check for the API key to prevent errors and gracefully degrade.
-    if (!process.env.API_KEY) {
-        console.warn("API_KEY not provided. Skipping YouTube video search.");
+    const ai = getAiClient();
+    if (!ai) {
         return null;
     }
+
     try {
         const prompt = `Find the most relevant YouTube video for a blog post titled "${post.title}" with keywords: ${post.keywords.join(', ')}. The post is about ${post.description}. Return only a JSON object with "id" (the YouTube video ID) and "reason" (a short, compelling reason for recommending it).`;
         const response = await ai.models.generateContent({
@@ -39,11 +49,11 @@ export const findYouTubeVideo = async (post: Post): Promise<YouTubeVideo | null>
 };
 
 export const generateRelatedContentIdeas = async (productName: string): Promise<string[]> => {
-    // FIX: Add a runtime check for the API key to prevent errors and gracefully degrade.
-    if (!process.env.API_KEY) {
-        console.warn("API_KEY not provided. Skipping related content generation.");
+    const ai = getAiClient();
+    if (!ai) {
         return [];
     }
+    
     try {
         const prompt = `You are an expert SEO content strategist. For the product "${productName}", generate 3 compelling, related blog post titles that a user might be interested in. Return only a JSON array of strings.`;
         const response = await ai.models.generateContent({
@@ -67,11 +77,8 @@ export const generateRelatedContentIdeas = async (productName: string): Promise<
 
 
 export const findRelatedPosts = async (currentPost: Post, allPosts: Post[]): Promise<Post[]> => {
-    // FIX: Add a runtime check for the API key to prevent errors and gracefully degrade.
-    if (!process.env.API_KEY || allPosts.length <= 1) {
-        if (!process.env.API_KEY) {
-            console.warn("API_KEY not provided. Skipping related post search.");
-        }
+    const ai = getAiClient();
+    if (!ai || allPosts.length <= 1) {
         return [];
     }
 
