@@ -1,71 +1,57 @@
+
 import { Post } from '../types';
+import { parseMarkdown } from './markdownParser';
 
-const posts: Post[] = [
-  {
-    id: 'gemini-api-intro',
-    title: 'Getting Started with the Gemini API',
-    author: 'Jane Doe',
-    date: '2024-07-29',
-    excerpt: 'A beginner-friendly guide to using the Google Gemini API for your projects.',
-    content: `
-# Introduction to Gemini API
+let postsCache: Post[] | null = null;
 
-The Google Gemini API is a powerful tool for developers aiming to integrate generative AI into their applications. This post will walk you through the initial setup and a basic example.
+const defaultAuthor = {
+    name: 'Trend Spotter 콘텐츠 팀',
+    image: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2QxZDVlMCI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6bTAgMThjLTQuNDEgMC04LTMuNTktOC04czMuNTktOCA4IDggOCAzLjU5IDggOC0zLjU5IDgtOCA4eiIvPjxwYXRoIGQ9Ik0xMiA2Yy0yLjIyIDAtNC4yNS44Ni01LjgyIDIuMjhsMS40MiAxLjQyQzguNzggOC41MyA5LjgzIDggMTIgOHMyLjIyLjUzIDMuMzkgMS43bDEuNDItMS40MkM4LjI1IDYuODYgNC4yMiA2IDEyIDZ6Ii8+PC9zdmc+',
+    bio: '최신 기술 트렌드를 분석하고 소비자의 현명한 선택을 돕는 콘텐츠 전문가입니다.',
+    socialLinks: ['https://www.linkedin.com/in/kwang-hoon-kim-13a139277']
+};
 
-## Setup
 
-First, you need to get an API key...
-
-## Example
-
-Here is a simple example using Node.js:
-
-\`\`\`javascript
-console.log("Hello, Gemini!");
-\`\`\`
-`,
-    tags: ['Gemini', 'API', 'AI'],
-  },
-  {
-    id: 'react-hooks-deep-dive',
-    title: 'A Deep Dive into React Hooks',
-    author: 'John Smith',
-    date: '2024-07-25',
-    excerpt: 'Explore advanced concepts and patterns for using React Hooks effectively.',
-    content: `
-# React Hooks: Beyond the Basics
-
-useState and useEffect are just the beginning. Let's explore custom hooks, useReducer, and more.
-
-## Custom Hooks
-
-Creating your own hooks allows you to extract component logic into reusable functions.
-`,
-    tags: ['React', 'JavaScript', 'Frontend'],
-  },
-   {
-    id: 'ai-in-frontend',
-    title: 'The Role of AI in Modern Frontend Development',
-    author: 'Jane Doe',
-    date: '2024-07-22',
-    excerpt: 'Discover how AI is changing the landscape of frontend development, from code generation to automated testing.',
-    content: `
-# AI is transforming Frontend
-
-From Github Copilot to AI-powered design tools, the way we build user interfaces is evolving rapidly.
-`,
-    tags: ['AI', 'Frontend', 'Development'],
+const extractCoverImage = (content: string): string | undefined => {
+  const imageRegex = /!\[.*?\]\((.*?)\)/;
+  const match = content.match(imageRegex);
+  if (match && match[1]) {
+    // Handle comma-separated URLs
+    return match[1].split(',')[0].trim();
   }
-];
+  return undefined;
+};
 
-export const getPosts = async (): Promise<Post[]> => {
-  // Simulate network delay
-  await new Promise(res => setTimeout(res, 200));
+export const getAllPosts = async (): Promise<Post[]> => {
+  if (postsCache) {
+    return postsCache;
+  }
+
+  const modules = import.meta.glob('/posts/*.md', { as: 'raw', eager: true });
+  const posts: Post[] = Object.entries(modules).map(([path, rawContent]) => {
+    const slug = path.split('/').pop()!.replace('.md', '');
+    const post = parseMarkdown(slug, rawContent);
+    post.coverImage = extractCoverImage(post.content);
+    
+    // Apply default author details if not specified in post
+    post.author = {
+        name: post.author.name || defaultAuthor.name,
+        image: post.author.image || defaultAuthor.image,
+        bio: post.author.bio || defaultAuthor.bio,
+        socialLinks: post.author.socialLinks && post.author.socialLinks.length > 0 ? post.author.socialLinks : defaultAuthor.socialLinks
+    };
+
+    return post;
+  });
+
+  // Sort by date, newest first
+  posts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  postsCache = posts;
   return posts;
 };
 
-export const getPostById = async (id: string): Promise<Post | undefined> => {
-  // Simulate network delay
-  await new Promise(res => setTimeout(res, 200));
-  return posts.find(post => post.id === id);
+export const getPostBySlug = async (slug: string): Promise<Post | null> => {
+  const posts = await getAllPosts();
+  return posts.find(post => post.slug === slug) || null;
 };

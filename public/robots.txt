@@ -1,1 +1,5 @@
-full contents of public/robots.txt
+
+User-agent: *
+Allow: /
+
+Sitemap: https://cpb-five.vercel.app/sitemap.xml
