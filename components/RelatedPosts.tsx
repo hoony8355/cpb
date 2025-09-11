@@ -1,71 +1,61 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getPosts } from '../services/postService';
+import { getAllPosts, getPostBySlug } from '../services/postService';
 import { Post } from '../types';
+import { findRelatedPosts } from '../services/geminiService';
 
 interface RelatedPostsProps {
   currentPostSlug: string;
-  tags: string[];
 }
 
-const RelatedPosts: React.FC<RelatedPostsProps> = ({ currentPostSlug, tags }) => {
+const RelatedPosts: React.FC<RelatedPostsProps> = ({ currentPostSlug }) => {
   const [relatedPosts, setRelatedPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    getPosts().then(allPosts => {
-      const related = allPosts.filter(post =>
-        post.slug !== currentPostSlug && post.tags.some(tag => tags.includes(tag))
-      ).slice(0, 3); // Get up to 3 related posts
-      setRelatedPosts(related);
-    });
-  }, [currentPostSlug, tags]);
+    const fetchRelated = async () => {
+      setLoading(true);
+      const allPosts = await getAllPosts();
+      const currentPost = await getPostBySlug(currentPostSlug);
+      if (currentPost) {
+        const aiRelatedPosts = await findRelatedPosts(currentPost, allPosts);
+        setRelatedPosts(aiRelatedPosts);
+      }
+      setLoading(false);
+    };
+    fetchRelated();
+  }, [currentPostSlug]);
+
+  if (loading) {
+    return (
+        <div className="mt-12">
+            <div className="h-6 bg-gray-300 rounded w-1/4 mb-6 animate-pulse"></div>
+            <div className="space-y-4">
+                <div className="h-16 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-16 bg-gray-200 rounded animate-pulse"></div>
+                <div className="h-16 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+        </div>
+    );
+  }
 
   if (relatedPosts.length === 0) {
     return null;
   }
 
   return (
-    <div style={styles.container}>
-      <h3 style={styles.title}>Related Posts</h3>
-      <ul style={styles.list}>
+    <div className="mt-12">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">관련 글 더보기</h2>
+      <div className="space-y-4">
         {relatedPosts.map(post => (
-          <li key={post.slug} style={styles.listItem}>
-            <Link to={`/post/${post.slug}`} style={styles.link}>{post.title}</Link>
-            <p style={styles.excerpt}>{post.excerpt}</p>
-          </li>
+          <Link to={`/post/${post.slug}`} key={post.slug} className="block p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
+            <h3 className="font-semibold text-indigo-700">{post.title}</h3>
+            <p className="text-sm text-gray-600 mt-1 line-clamp-2">{post.description}</p>
+          </Link>
         ))}
-      </ul>
+      </div>
     </div>
   );
-};
-
-const styles: { [key: string]: React.CSSProperties } = {
-  container: {
-    marginTop: '3rem',
-  },
-  title: {
-    borderBottom: '2px solid #0070f3',
-    paddingBottom: '0.5rem',
-    marginBottom: '1.5rem',
-  },
-  list: {
-    listStyle: 'none',
-    padding: 0,
-  },
-  listItem: {
-    marginBottom: '1.5rem',
-  },
-  link: {
-    textDecoration: 'none',
-    color: '#333',
-    fontSize: '1.2rem',
-    fontWeight: 'bold',
-  },
-  excerpt: {
-    margin: '0.5rem 0 0 0',
-    color: '#666',
-    fontSize: '0.9rem',
-  }
 };
 
 export default RelatedPosts;

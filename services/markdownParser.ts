@@ -1,23 +1,35 @@
-// In a real application, it's highly recommended to use a robust library like 'marked' or 'react-markdown'.
-// This is a simplified placeholder to demonstrate the concept.
-export const parseMarkdown = (markdown: string): string => {
-  let html = markdown
-    .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-    .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-    .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-    .replace(/^\> (.*$)/gim, '<blockquote>$1</blockquote>')
-    .replace(/\*\*(.*)\*\*/gim, '<b>$1</b>')
-    .replace(/\*(.*)\*/gim, '<i>$1</i>')
-    .replace(/!\[(.*?)\]\((.*?)\)/gim, "<img alt='$1' src='$2' />")
-    .replace(/\[(.*?)\]\((.*?)\)/gim, "<a href='$2'>$1</a>")
-    .replace(/^\s*\n\*/gm, '<ul>\n*')
-    .replace(/^(\*.+)\s*\n([^\*])/gm, '$1\n</ul>\n\n$2')
-    .replace(/^\* (.*$)/gim, '<li>$1</li>')
-    .replace(/\n/g, '<br />');
+export const parseMarkdown = (
+  content: string
+): { metadata: any; body: string; schemaJson?: string } => {
+  const metadata: any = {};
+  
+  const scriptRegex = /<script type="application\/ld\+json">(.*?)<\/script>/s;
+  const scriptMatch = content.match(scriptRegex);
+  const schemaJson = scriptMatch ? scriptMatch[1] : undefined;
+  
+  const contentWithoutSchema = content.replace(scriptRegex, '').trim();
+  
+  const metadataRegex = /^---([\s\S]*?)---/;
+  const match = contentWithoutSchema.match(metadataRegex);
 
-  // Fix for list brakes
-  html = html.replace(/<\/li><br \/>/g, '</li>');
-  html = html.replace(/<\/ul><br \/>/g, '</ul>');
+  if (!match) {
+    return { metadata: {}, body: contentWithoutSchema, schemaJson };
+  }
+  
+  const metadataStr = match[1].trim();
+  const body = contentWithoutSchema.substring(match[0].length).trim();
+  
+  metadataStr.split('\n').forEach(line => {
+    const [key, ...valueParts] = line.split(':');
+    const value = valueParts.join(':').trim();
+    const cleanKey = key.trim();
     
-  return html.trim();
+    if (value.startsWith('[') && value.endsWith(']')) {
+      metadata[cleanKey] = value.substring(1, value.length - 1).split(',').map(s => s.trim().replace(/"/g, ''));
+    } else {
+      metadata[cleanKey] = value.replace(/^['"]|['"]$/g, '');
+    }
+  });
+
+  return { metadata, body, schemaJson };
 };

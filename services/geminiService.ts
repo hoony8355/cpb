@@ -1,75 +1,95 @@
-//
-// Fix: Import `GoogleGenAI` and `Type` from `@google/genai`
-import { GoogleGenAI, GenerateContentResponse, Type } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
+import { Post, YouTubeVideo } from '../types';
 
-//
-// Fix: Initialize GoogleGenAI with a named apiKey parameter from process.env.API_KEY.
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+let ai: GoogleGenAI | null = null;
 
-/**
- * Generates a short summary for a blog post.
- * @param content The full content of the blog post.
- * @returns A promise that resolves to the summary text.
- */
-export const generatePostSummary = async (content: string): Promise<string> => {
+if (process.env.API_KEY) {
+  ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+} else {
+  console.warn("API_KEY environment variable not set. AI features will be disabled.");
+}
+
+export const findYouTubeVideo = async (title: string, description: string, keywords: string[]): Promise<YouTubeVideo | null> => {
+  if (!ai) return null;
   try {
-    //
-    // Fix: Use the correct method `ai.models.generateContent` and the recommended model 'gemini-2.5-flash'.
-    const response: GenerateContentResponse = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: `Summarize the following blog post content in 1-2 sentences:\n\n${content}`,
-    });
-    //
-    // Fix: Access the text directly from the `response.text` property.
-    return response.text;
-  } catch (error) {
-    console.error("Error generating post summary:", error);
-    // Gracefully handle API errors.
-    return "Could not generate summary at this time.";
-  }
-};
-
-/**
- * Generates a list of related topics based on post content using a JSON schema.
- * @param content The content of the blog post.
- * @returns A promise that resolves to an array of related topic strings.
- */
-export const getRelatedTopics = async (content: string): Promise<string[]> => {
-  try {
-    //
-    // Fix: Use the correct method `ai.models.generateContent` with JSON response configuration.
-    const response: GenerateContentResponse = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: `Based on the following blog post, list 3-5 related topics or keywords.
-      Blog Post: "${content}"`,
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: `Find the most relevant YouTube video ID for a blog post with the title "${title}", description "${description}", and keywords "${keywords.join(', ')}". Return ONLY a JSON object with "id" and "reason" for your choice.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
           properties: {
-            topics: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.STRING,
-                description: 'A related topic or keyword'
-              },
-              description: 'A list of topics related to the blog post.'
-            }
-          },
-          required: ["topics"]
-        },
+            id: { type: Type.STRING, description: 'The YouTube video ID.'},
+            reason: { type: Type.STRING, description: 'A short reason for choosing this video.'}
+          }
+        }
       }
     });
-
-    //
-    // Fix: Access the text directly from `response.text` and parse the JSON string.
-    const jsonStr = response.text.trim();
-    const result = JSON.parse(jsonStr);
-    return result.topics || [];
-
+    return JSON.parse(response.text.trim()) as YouTubeVideo;
   } catch (error) {
-    console.error("Error fetching related topics:", error);
-    // Gracefully handle API errors.
-    return [];
+    console.error("Error finding YouTube video:", error);
+    return null;
   }
+};
+
+
+export const generateRelatedContentIdeas = async (productName: string): Promise<string[]> => {
+    if (!ai) return [];
+    try {
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: `I have a blog post reviewing a product called "${productName}". As an SEO expert, suggest 3 highly relevant and clickable blog post titles that a user interested in this product might also want to read. Return ONLY a JSON object with a single key "ideas" which is an array of strings.`,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              ideas: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+              },
+            },
+          },
+        },
+      });
+      const result = JSON.parse(response.text.trim());
+      return result.ideas || [];
+    } catch (error) {
+      console.error("Error generating related content ideas:", error);
+      return [];
+    }
+};
+
+export const findRelatedPosts = async (currentPost: Post, allPosts: Post[]): Promise<Post[]> => {
+    if (!ai || allPosts.length <= 1) return [];
+
+    const otherPosts = allPosts.filter(p => p.slug !== currentPost.slug);
+    const postSummaries = otherPosts.map(p => `- slug: ${p.slug}\n  title: ${p.title}\n  description: ${p.description}`).join('\n');
+
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: `Here is a main blog post:\n- title: ${currentPost.title}\n- description: ${currentPost.description}\n\nHere is a list of other available posts:\n${postSummaries}\n\nFrom the list, identify the top 3 most relevant posts to the main post. Return ONLY a JSON object with a single key "relatedSlugs" which is an array of the 3 chosen post slugs.`,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        relatedSlugs: {
+                            type: Type.ARRAY,
+                            items: { type: Type.STRING }
+                        }
+                    }
+                }
+            }
+        });
+        const result = JSON.parse(response.text.trim());
+        const relatedSlugs: string[] = result.relatedSlugs || [];
+        return otherPosts.filter(p => relatedSlugs.includes(p.slug));
+
+    } catch (error) {
+        console.error("Error finding related posts:", error);
+        return [];
+    }
 };

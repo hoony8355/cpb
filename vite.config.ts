@@ -1,15 +1,41 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import sitemap from 'vite-plugin-sitemap';
+import { readdirSync, readFileSync } from 'fs';
+import { parse } from 'path';
+import matter from 'gray-matter';
 
-// https://vitejs.dev/config/
+const getPostSlugs = () => {
+  const postFiles = readdirSync('./posts');
+  return postFiles.map(file => {
+    const fileContents = readFileSync(`./posts/${file}`, 'utf8');
+    const { data } = matter(fileContents);
+    return {
+      slug: parse(file).name,
+      lastmod: data.date,
+    };
+  });
+};
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [
+    react(),
+    sitemap({
+      hostname: 'https://cpb-five.vercel.app/',
+      // Fix: Use `routes` instead of `dynamicRoutes` and `path` instead of `route` to match the sitemap plugin's API.
+      routes: getPostSlugs().map(post => ({
+        path: `/post/${post.slug}`,
+        lastmod: post.lastmod,
+      })),
+      robots: [
+        {
+          userAgent: '*',
+          allow: '/',
+        },
+      ],
+    }),
+  ],
   define: {
-    // Vite does not expose process.env by default
-    // This makes process.env.API_KEY available in the client-side code
-    // In a production app, use a more secure way to handle API keys.
-    'process.env': {
-      API_KEY: process.env.VITE_GEMINI_API_KEY
-    }
-  }
-})
+    'process.env.API_KEY': JSON.stringify(process.env.VITE_API_KEY),
+  },
+});

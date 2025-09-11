@@ -1,31 +1,25 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
-// This is a mock analytics service. In a real app, you would integrate
-// with a service like Google Analytics, Plausible, or a custom backend.
-const analyticsService = {
-  trackPage: (path: string) => {
-    // Example: send a 'page_view' event to an analytics service
-    console.log(`Analytics: Page view tracked for "${path}"`);
-    /* 
-    if (window.gtag) {
-      window.gtag('config', 'GA_MEASUREMENT_ID', {
-        page_path: path,
-      });
-    }
-    */
+declare global {
+  interface Window {
+    gtag?: (
+      command: 'config',
+      targetId: string,
+      config?: { page_path?: string }
+    ) => void;
   }
-};
+}
 
-/**
- * Custom hook that tracks page views whenever the route changes.
- */
 export const usePageTracking = () => {
   const location = useLocation();
 
   useEffect(() => {
-    // The path includes the pathname and search query string
-    const currentPath = location.pathname + location.search;
-    analyticsService.trackPage(currentPath);
+    if (window.gtag) {
+      window.gtag('config', 'G-C7J7KFMEJY', {
+        page_path: location.pathname + location.hash + location.search,
+      });
+    }
+    window.scrollTo(0, 0);
   }, [location]);
 };

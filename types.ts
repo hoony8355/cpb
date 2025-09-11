@@ -1,16 +1,28 @@
 export interface Post {
   slug: string;
   title: string;
-  author: string;
   date: string;
-  excerpt: string;
-  content: string; // Markdown content
-  tags: string[];
-  imageUrl?: string;
+  description: string;
+  keywords: string[];
+  content: string;
+  coverImage?: string;
+  author: Author;
+  schemaJson?: string;
 }
 
 export interface Author {
-    name: string;
-    avatarUrl: string;
-    bio: string;
+  name: string;
+  image: string;
+  bio: string;
+  socialLinks: string[];
+}
+
+export interface YouTubeVideo {
+  id: string;
+  reason: string;
+}
+
+export interface Breadcrumb {
+  name: string;
+  path: string;
 }

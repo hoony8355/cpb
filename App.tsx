@@ -1,24 +1,28 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
-import HomePage from './pages/HomePage';
-import PostPage from './pages/PostPage';
-import NotFoundPage from './pages/NotFoundPage';
+import { usePageTracking } from './hooks/usePageTracking';
+
 import Header from './components/Header';
 import Footer from './components/Footer';
-import { usePageTracking } from './hooks/usePageTracking';
+
+const HomePage = React.lazy(() => import('./pages/HomePage'));
+const PostPage = React.lazy(() => import('./pages/PostPage'));
+const NotFoundPage = React.lazy(() => import('./pages/NotFoundPage'));
 
 function App() {
   usePageTracking();
 
   return (
-    <div className="app">
+    <div className="flex flex-col min-h-screen">
       <Header />
-      <main style={{ padding: '2rem 0' }}>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/post/:slug" element={<PostPage />} />
-          <Route path="*" element={<NotFoundPage />} />
-        </Routes>
+      <main className="flex-grow">
+         <Suspense fallback={<div className="text-center py-20">Loading page...</div>}>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/post/:slug" element={<PostPage />} />
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+         </Suspense>
       </main>
       <Footer />
     </div>

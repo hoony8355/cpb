@@ -1,14 +1,71 @@
-<script type="importmap">
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trend Spotter</title>
+
+    <!-- Google Analytics & Clarity -->
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-C7J7KFMEJY"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-C7J7KFMEJY');
+    </script>
+    <script type="text/javascript">
+        (function(c,l,a,r,i,t,y){
+            c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+            t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+            y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+        })(window, document, "clarity", "script", "t8yonfzmnl");
+    </script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    
+    <style type="text/tailwindcss">
+      body {
+        font-family: 'Noto Sans KR', sans-serif;
+      }
+      .prose img {
+        @apply rounded-lg shadow-md mx-auto;
+        max-height: 550px;
+        object-fit: contain;
+      }
+       .prose a[rel~="sponsored"] {
+        @apply inline-block bg-blue-600 text-white font-bold py-3 px-6 rounded-lg text-center no-underline hover:bg-blue-700 transition-colors;
+      }
+    </style>
+    
+  <script type="importmap">
 {
   "imports": {
     "react": "https://aistudiocdn.com/react@^19.1.1",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
     "react-router-dom": "https://aistudiocdn.com/react-router-dom@^7.8.2",
     "react/": "https://aistudiocdn.com/react@^19.1.1/",
+    "react-markdown": "https://aistudiocdn.com/react-markdown@^10.1.0",
+    "remark-gfm": "https://aistudiocdn.com/remark-gfm@^4.0.1",
+    "rehype-raw": "https://aistudiocdn.com/rehype-raw@^7.0.0",
     "@google/genai": "https://aistudiocdn.com/@google/genai@^1.19.0",
     "vite": "https://aistudiocdn.com/vite@^7.1.5",
-    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.0.2"
+    "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.0.2",
+    "vite-plugin-sitemap": "https://aistudiocdn.com/vite-plugin-sitemap@^0.8.2",
+    "path": "https://aistudiocdn.com/path@^0.12.7",
+    "fs": "https://aistudiocdn.com/fs@^0.0.1-security",
+    "gray-matter": "https://aistudiocdn.com/gray-matter@^4.0.3"
   }
 }
 </script>
-full contents of index.html
+</head>
+  <body class="bg-gray-50">
+    <div id="root"></div>
+    <script type="module" src="/src/index.tsx"></script>
+  </body>
+</html>

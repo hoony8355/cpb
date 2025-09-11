@@ -4,46 +4,24 @@ import SeoManager from '../components/SeoManager';
 
 const NotFoundPage: React.FC = () => {
   return (
-    <div style={styles.container}>
-      <SeoManager 
-        title="404 - Page Not Found" 
-        description="The page you are looking for does not exist." 
-      />
-      <h1 style={styles.title}>404</h1>
-      <p style={styles.message}>Oops! The page you're looking for could not be found.</p>
-      <Link to="/" style={styles.link}>Go back to Home</Link>
+    <>
+    <SeoManager
+        title="404 - 페이지를 찾을 수 없습니다"
+        description="요청하신 페이지를 찾을 수 없습니다. 주소가 올바른지 확인해주세요."
+    />
+    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
+      <h1 className="text-6xl font-extrabold text-indigo-600">404</h1>
+      <h2 className="mt-4 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">Page Not Found</h2>
+      <p className="mt-4 text-base text-gray-600">죄송합니다. 요청하신 페이지를 찾을 수 없습니다.</p>
+      <Link
+        to="/"
+        className="mt-8 inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+      >
+        홈으로 돌아가기
+      </Link>
     </div>
+    </>
   );
-};
-
-const styles: { [key: string]: React.CSSProperties } = {
-    container: {
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        minHeight: '60vh',
-        textAlign: 'center'
-    },
-    title: {
-        fontSize: '6rem',
-        fontWeight: 'bold',
-        margin: 0,
-        color: '#333'
-    },
-    message: {
-        fontSize: '1.25rem',
-        margin: '1rem 0 2rem 0',
-        color: '#666'
-    },
-    link: {
-        padding: '0.75rem 1.5rem',
-        backgroundColor: '#0070f3',
-        color: '#fff',
-        textDecoration: 'none',
-        borderRadius: '5px',
-        fontWeight: 'bold',
-    }
 };
 
 export default NotFoundPage;
