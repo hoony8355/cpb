@@ -19,7 +19,7 @@ export function getAllPosts(): Post[] {
   
   const posts: Post[] = Object.entries(modules).map(([path, rawContent]) => {
     const slug = path.split('/').pop()?.replace('.md', '') ?? 'unknown-slug';
-    const { frontmatter, content } = parseMarkdown(rawContent);
+    const { frontmatter, content, schemaJson } = parseMarkdown(rawContent);
     const fm = frontmatter as Frontmatter;
 
     return {
@@ -30,6 +30,7 @@ export function getAllPosts(): Post[] {
       keywords: (fm.keywords as string[]) || [],
       content,
       coverImage: extractCoverImage(content),
+      schemaJson,
     };
   });
 

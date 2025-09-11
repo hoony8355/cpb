@@ -54,49 +54,54 @@ const SeoManager: React.FC<SeoManagerProps> = ({ title, description, keywords, i
     if (!schemaElement) {
         schemaElement = document.createElement('script');
         schemaElement.id = 'json-ld-schema';
-        // FIX: Cast to HTMLScriptElement to set the 'type' property, as TypeScript infers
-        // schemaElement as a generic HTMLElement which lacks this property.
         (schemaElement as HTMLScriptElement).type = 'application/ld+json';
         document.head.appendChild(schemaElement);
     }
 
-    let schema: object;
-    if (post) {
-      schema = {
-        '@context': 'https://schema.org',
-        '@type': 'BlogPosting',
-        'mainEntityOfPage': {
-          '@type': 'WebPage',
-          '@id': currentUrl,
-        },
-        'headline': post.title,
-        'description': post.description,
-        'image': post.coverImage || '',
-        'author': {
-          '@type': 'Organization',
-          'name': 'Trend Spotter',
-        },
-        'publisher': {
-          '@type': 'Organization',
-          'name': 'Trend Spotter',
-          'logo': {
-            '@type': 'ImageObject',
-            'url': `${window.location.origin}/vite.svg`,
-          },
-        },
-        'datePublished': post.date,
-        'dateModified': post.date,
-      };
+    // **INTELLIGENT SCHEMA LOGIC**
+    // If the post has a pre-defined schema in its markdown, use it.
+    // Otherwise, generate a basic one.
+    if (post?.schemaJson) {
+      schemaElement.innerHTML = post.schemaJson;
     } else {
+      let schema: object;
+      if (post) {
         schema = {
-            '@context': 'https://schema.org',
-            '@type': 'WebSite',
-            'url': window.location.origin,
-            'name': title,
-            'description': description,
+          '@context': 'https://schema.org',
+          '@type': 'BlogPosting',
+          'mainEntityOfPage': {
+            '@type': 'WebPage',
+            '@id': currentUrl,
+          },
+          'headline': post.title,
+          'description': post.description,
+          'image': post.coverImage || '',
+          'author': {
+            '@type': 'Organization',
+            'name': 'Trend Spotter',
+          },
+          'publisher': {
+            '@type': 'Organization',
+            'name': 'Trend Spotter',
+            'logo': {
+              '@type': 'ImageObject',
+              'url': `${window.location.origin}/vite.svg`,
+            },
+          },
+          'datePublished': post.date,
+          'dateModified': post.date,
         };
+      } else {
+          schema = {
+              '@context': 'https://schema.org',
+              '@type': 'WebSite',
+              'url': window.location.origin,
+              'name': title,
+              'description': description,
+          };
+      }
+      schemaElement.innerHTML = JSON.stringify(schema, null, 2);
     }
-    schemaElement.innerHTML = JSON.stringify(schema, null, 2);
 
   }, [title, description, keywords, imageUrl, post]);
 

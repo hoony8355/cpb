@@ -6,4 +6,5 @@ export interface Post {
   keywords: string[];
   content: string;
   coverImage?: string;
+  schemaJson?: string;
 }
