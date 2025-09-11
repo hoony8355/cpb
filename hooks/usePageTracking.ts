@@ -1,25 +1,21 @@
 import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 
-declare global {
-  interface Window {
-    gtag?: (
-      command: 'config',
-      targetId: string,
-      config?: { page_path?: string }
-    ) => void;
-  }
-}
-
-export const usePageTracking = () => {
+/**
+ * Custom hook to track page views and scroll to the top on navigation.
+ * This is a foundational implementation that can be extended with an analytics service.
+ */
+const usePageTracking = () => {
   const location = useLocation();
 
   useEffect(() => {
-    if (window.gtag) {
-      window.gtag('config', 'G-C7J7KFMEJY', {
-        page_path: location.pathname + location.hash + location.search,
-      });
-    }
+    // In a real-world application, you would integrate with an analytics
+    // service like Google Analytics here. For now, we'll log to the console.
+    console.log(`Navigated to ${location.pathname}${location.search}`);
+
+    // Scroll to the top of the page on route change
     window.scrollTo(0, 0);
   }, [location]);
 };
+
+export default usePageTracking;

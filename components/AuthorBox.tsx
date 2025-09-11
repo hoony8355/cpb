@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Author } from '../types';
 
@@ -6,27 +7,30 @@ interface AuthorBoxProps {
 }
 
 const AuthorBox: React.FC<AuthorBoxProps> = ({ author }) => {
-  if (!author) return null;
-
   return (
-    <div className="mt-12 bg-gray-100 p-6 rounded-lg flex items-start space-x-6">
-      <img 
-        src={author.image} 
-        alt={author.name} 
-        className="w-20 h-20 rounded-full object-cover"
-        loading="lazy"
-        decoding="async"
-      />
-      <div>
-        <h3 className="text-lg font-bold text-gray-800">About {author.name}</h3>
-        <p className="mt-2 text-gray-600">{author.bio}</p>
-        {author.socialLinks && author.socialLinks.length > 0 && (
-          <div className="mt-3">
-            <a href={author.socialLinks[0]} target="_blank" rel="noopener noreferrer" className="text-sm font-semibold text-indigo-600 hover:text-indigo-800">
-              Connect
-            </a>
-          </div>
-        )}
+    <div className="mt-12 pt-8 border-t">
+      <div className="flex items-center gap-4">
+        <img 
+            src={author.image || 'https://source.unsplash.com/random/100x100?avatar'} 
+            alt={author.name} 
+            className="w-16 h-16 rounded-full object-cover"
+            loading="lazy"
+            decoding="async"
+        />
+        <div>
+          <p className="text-sm text-gray-500">작성자</p>
+          <h4 className="font-bold text-lg text-gray-900">{author.name}</h4>
+          {author.bio && <p className="text-sm text-gray-600 mt-1">{author.bio}</p>}
+          {author.socialLinks && author.socialLinks.length > 0 && (
+            <div className="mt-2 flex gap-3">
+              {author.socialLinks.map(link => (
+                <a key={link} href={link} target="_blank" rel="noopener noreferrer" className="text-sky-500 hover:text-sky-700">
+                  Social
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

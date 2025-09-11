@@ -1,95 +1,97 @@
-import { GoogleGenAI, Type } from "@google/genai";
-import { Post, YouTubeVideo } from '../types';
 
+import { GoogleGenAI, Type } from "@google/genai";
+import { Post, YouTubeVideo } from "../types";
+
+const apiKey = process.env.API_KEY;
 let ai: GoogleGenAI | null = null;
 
-if (process.env.API_KEY) {
-  ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+if (apiKey) {
+    ai = new GoogleGenAI({ apiKey });
 } else {
-  console.warn("API_KEY environment variable not set. AI features will be disabled.");
+    console.warn("API_KEY environment variable not set. AI features will be disabled.");
 }
 
-export const findYouTubeVideo = async (title: string, description: string, keywords: string[]): Promise<YouTubeVideo | null> => {
-  if (!ai) return null;
-  try {
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: `Find the most relevant YouTube video ID for a blog post with the title "${title}", description "${description}", and keywords "${keywords.join(', ')}". Return ONLY a JSON object with "id" and "reason" for your choice.`,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            id: { type: Type.STRING, description: 'The YouTube video ID.'},
-            reason: { type: Type.STRING, description: 'A short reason for choosing this video.'}
-          }
-        }
-      }
-    });
-    return JSON.parse(response.text.trim()) as YouTubeVideo;
-  } catch (error) {
-    console.error("Error finding YouTube video:", error);
-    return null;
-  }
-};
-
-
-export const generateRelatedContentIdeas = async (productName: string): Promise<string[]> => {
-    if (!ai) return [];
+export const findYouTubeVideo = async (post: Post): Promise<YouTubeVideo | null> => {
+    if (!ai) return null;
     try {
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: `I have a blog post reviewing a product called "${productName}". As an SEO expert, suggest 3 highly relevant and clickable blog post titles that a user interested in this product might also want to read. Return ONLY a JSON object with a single key "ideas" which is an array of strings.`,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              ideas: {
-                type: Type.ARRAY,
-                items: { type: Type.STRING },
-              },
-            },
-          },
-        },
-      });
-      const result = JSON.parse(response.text.trim());
-      return result.ideas || [];
-    } catch (error) {
-      console.error("Error generating related content ideas:", error);
-      return [];
-    }
-};
-
-export const findRelatedPosts = async (currentPost: Post, allPosts: Post[]): Promise<Post[]> => {
-    if (!ai || allPosts.length <= 1) return [];
-
-    const otherPosts = allPosts.filter(p => p.slug !== currentPost.slug);
-    const postSummaries = otherPosts.map(p => `- slug: ${p.slug}\n  title: ${p.title}\n  description: ${p.description}`).join('\n');
-
-    try {
+        const prompt = `Find the most relevant YouTube video for a blog post titled "${post.title}" with keywords: ${post.keywords.join(', ')}. The post is about ${post.description}. Return only a JSON object with "id" (the YouTube video ID) and "reason" (a short, compelling reason for recommending it).`;
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash",
-            contents: `Here is a main blog post:\n- title: ${currentPost.title}\n- description: ${currentPost.description}\n\nHere is a list of other available posts:\n${postSummaries}\n\nFrom the list, identify the top 3 most relevant posts to the main post. Return ONLY a JSON object with a single key "relatedSlugs" which is an array of the 3 chosen post slugs.`,
+            contents: prompt,
             config: {
                 responseMimeType: "application/json",
                 responseSchema: {
                     type: Type.OBJECT,
                     properties: {
-                        relatedSlugs: {
-                            type: Type.ARRAY,
-                            items: { type: Type.STRING }
-                        }
-                    }
+                        id: { type: Type.STRING },
+                        reason: { type: Type.STRING }
+                    },
+                    required: ["id", "reason"]
                 }
             }
         });
-        const result = JSON.parse(response.text.trim());
-        const relatedSlugs: string[] = result.relatedSlugs || [];
-        return otherPosts.filter(p => relatedSlugs.includes(p.slug));
+        const jsonStr = response.text.trim();
+        return JSON.parse(jsonStr) as YouTubeVideo;
+    } catch (error) {
+        console.error("Error finding YouTube video:", error);
+        return null;
+    }
+};
 
+export const generateRelatedContentIdeas = async (productName: string): Promise<string[]> => {
+    if (!ai) return [];
+    try {
+        const prompt = `You are an expert SEO content strategist. For the product "${productName}", generate 3 compelling, related blog post titles that a user might be interested in. Return only a JSON array of strings.`;
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.ARRAY,
+                    items: { type: Type.STRING }
+                }
+            }
+        });
+        const jsonStr = response.text.trim();
+        return JSON.parse(jsonStr) as string[];
+    } catch (error) {
+        console.error("Error generating related content ideas:", error);
+        return [];
+    }
+};
+
+
+export const findRelatedPosts = async (currentPost: Post, allPosts: Post[]): Promise<Post[]> => {
+    if (!ai || allPosts.length <= 1) return [];
+
+    try {
+        const otherPosts = allPosts
+            .filter(p => p.slug !== currentPost.slug)
+            .map(p => ({ slug: p.slug, title: p.title, description: p.description }));
+
+        if (otherPosts.length === 0) return [];
+
+        const prompt = `Based on the current post (title: "${currentPost.title}", description: "${currentPost.description}"), find the 3 most relevant posts from this list:\n${JSON.stringify(otherPosts)}\nReturn only a JSON array of the slugs, e.g., ["slug-1", "slug-2", "slug-3"].`;
+        
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: prompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.ARRAY,
+                    items: { type: Type.STRING }
+                }
+            }
+        });
+        const jsonStr = response.text.trim();
+        const relatedSlugs: string[] = JSON.parse(jsonStr);
+        
+        const postsBySlug = new Map(allPosts.map(p => [p.slug, p]));
+        return relatedSlugs.map(slug => postsBySlug.get(slug)).filter((p): p is Post => !!p);
     } catch (error) {
         console.error("Error finding related posts:", error);
-        return [];
+        return []; // Return empty on error
     }
 };

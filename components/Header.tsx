@@ -1,27 +1,19 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-const Logo = () => (
-    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M12 2L2 7V17L12 22L22 17V7L12 2Z" fill="#4F46E5"/>
-      <path d="M12 2L22 7L12 12L2 7L12 2Z" fill="#818CF8"/>
-      <path d="M2 17L12 22L12 12L2 7V17Z" fill="#6366F1"/>
-      <path d="M22 17L12 22L12 12L22 7V17Z" fill="#A5B4FC"/>
-    </svg>
-);
-
 const Header: React.FC = () => {
   return (
-    <header className="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50">
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center">
-            <Link to="/" className="flex items-center space-x-2">
-              <Logo />
-              <span className="text-xl font-bold text-gray-800">Trend Spotter</span>
-            </Link>
-          </div>
-        </div>
+    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-sm shadow-sm">
+      <div className="container mx-auto px-4 py-3">
+        <Link to="/" className="flex items-center gap-2 text-xl font-bold text-gray-800">
+           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill="#38bdf8"/>
+            <circle cx="12" cy="12" r="3" fill="#0ea5e9"/>
+            <path d="M12 7c-2.76 0-5 2.24-5 5h2c0-1.65 1.35-3 3-3s3 1.35 3 3h2c0-2.76-2.24-5-5-5z" fill="white" fillOpacity="0.5"/>
+          </svg>
+          <span className="bg-gradient-to-r from-sky-500 to-cyan-400 bg-clip-text text-transparent">Trend Spotter</span>
+        </Link>
       </div>
     </header>
   );

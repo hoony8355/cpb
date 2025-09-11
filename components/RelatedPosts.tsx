@@ -1,14 +1,15 @@
+
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { getAllPosts, getPostBySlug } from '../services/postService';
 import { Post } from '../types';
+import { getAllPosts } from '../services/postService';
 import { findRelatedPosts } from '../services/geminiService';
 
 interface RelatedPostsProps {
-  currentPostSlug: string;
+  currentPost: Post;
 }
 
-const RelatedPosts: React.FC<RelatedPostsProps> = ({ currentPostSlug }) => {
+const RelatedPosts: React.FC<RelatedPostsProps> = ({ currentPost }) => {
   const [relatedPosts, setRelatedPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -16,27 +17,16 @@ const RelatedPosts: React.FC<RelatedPostsProps> = ({ currentPostSlug }) => {
     const fetchRelated = async () => {
       setLoading(true);
       const allPosts = await getAllPosts();
-      const currentPost = await getPostBySlug(currentPostSlug);
-      if (currentPost) {
-        const aiRelatedPosts = await findRelatedPosts(currentPost, allPosts);
-        setRelatedPosts(aiRelatedPosts);
-      }
+      const related = await findRelatedPosts(currentPost, allPosts);
+      setRelatedPosts(related);
       setLoading(false);
     };
+
     fetchRelated();
-  }, [currentPostSlug]);
+  }, [currentPost]);
 
   if (loading) {
-    return (
-        <div className="mt-12">
-            <div className="h-6 bg-gray-300 rounded w-1/4 mb-6 animate-pulse"></div>
-            <div className="space-y-4">
-                <div className="h-16 bg-gray-200 rounded animate-pulse"></div>
-                <div className="h-16 bg-gray-200 rounded animate-pulse"></div>
-                <div className="h-16 bg-gray-200 rounded animate-pulse"></div>
-            </div>
-        </div>
-    );
+    return <div className="mt-12 text-center text-gray-500">관련 글을 찾는 중...</div>;
   }
 
   if (relatedPosts.length === 0) {
@@ -45,12 +35,18 @@ const RelatedPosts: React.FC<RelatedPostsProps> = ({ currentPostSlug }) => {
 
   return (
     <div className="mt-12">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">관련 글 더보기</h2>
-      <div className="space-y-4">
+      <h3 className="text-2xl font-bold text-gray-800 mb-4">관련 글</h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {relatedPosts.map(post => (
-          <Link to={`/post/${post.slug}`} key={post.slug} className="block p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
-            <h3 className="font-semibold text-indigo-700">{post.title}</h3>
-            <p className="text-sm text-gray-600 mt-1 line-clamp-2">{post.description}</p>
+          <Link key={post.slug} to={`/post/${post.slug}`} className="block group">
+            <img 
+              src={post.coverImage || 'https://source.unsplash.com/random/300x200?sig=' + post.slug} 
+              alt={post.title}
+              className="w-full h-32 object-cover rounded-lg mb-2"
+              loading="lazy"
+            />
+            <h4 className="font-semibold text-gray-700 group-hover:text-sky-600">{post.title}</h4>
+            <p className="text-sm text-gray-500">{new Date(post.date).toLocaleDateString()}</p>
           </Link>
         ))}
       </div>

@@ -1,26 +1,20 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
-import SeoManager from '../components/SeoManager';
 
 const NotFoundPage: React.FC = () => {
   return (
-    <>
-    <SeoManager
-        title="404 - 페이지를 찾을 수 없습니다"
-        description="요청하신 페이지를 찾을 수 없습니다. 주소가 올바른지 확인해주세요."
-    />
-    <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-4">
-      <h1 className="text-6xl font-extrabold text-indigo-600">404</h1>
-      <h2 className="mt-4 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">Page Not Found</h2>
-      <p className="mt-4 text-base text-gray-600">죄송합니다. 요청하신 페이지를 찾을 수 없습니다.</p>
-      <Link
+    <div className="flex flex-col items-center justify-center text-center py-20">
+      <h1 className="text-6xl font-extrabold text-sky-500">404</h1>
+      <h2 className="text-2xl font-semibold text-gray-800 mt-4 mb-2">페이지를 찾을 수 없습니다.</h2>
+      <p className="text-gray-500 mb-6">요청하신 페이지가 존재하지 않거나, 주소가 변경되었을 수 있습니다.</p>
+      <Link 
         to="/"
-        className="mt-8 inline-flex items-center justify-center px-5 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700"
+        className="px-6 py-3 bg-sky-500 text-white font-semibold rounded-lg hover:bg-sky-600 transition-colors"
       >
         홈으로 돌아가기
       </Link>
     </div>
-    </>
   );
 };
 

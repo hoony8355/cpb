@@ -1,5 +1,5 @@
 {
-  "name": "Coupang Partners Blog",
-  "description": "A blog powered by React, Vite, and Gemini API for Coupang Partners content.",
+  "name": "Trend Spotter Blog",
+  "description": "A blog built with React, Vite, and Gemini API for content generation and SEO.",
   "requestFramePermissions": []
 }

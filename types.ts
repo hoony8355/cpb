@@ -1,3 +1,4 @@
+
 export interface Post {
   slug: string;
   title: string;
@@ -6,15 +7,15 @@ export interface Post {
   keywords: string[];
   content: string;
   coverImage?: string;
-  author: Author;
   schemaJson?: string;
+  author: Author;
 }
 
 export interface Author {
   name: string;
-  image: string;
-  bio: string;
-  socialLinks: string[];
+  image?: string;
+  bio?: string;
+  socialLinks?: string[];
 }
 
 export interface YouTubeVideo {

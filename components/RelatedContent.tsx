@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { generateRelatedContentIdeas } from '../services/geminiService';
 
@@ -17,16 +18,7 @@ const RelatedContent: React.FC<RelatedContentProps> = ({ productName }) => {
   }, [productName]);
 
   if (loading) {
-    return (
-        <div className="mt-6 p-4 bg-gray-100 rounded-lg animate-pulse">
-            <div className="h-4 bg-gray-300 rounded w-1/3 mb-4"></div>
-            <div className="space-y-2">
-                <div className="h-3 bg-gray-300 rounded w-full"></div>
-                <div className="h-3 bg-gray-300 rounded w-5/6"></div>
-                <div className="h-3 bg-gray-300 rounded w-full"></div>
-            </div>
-        </div>
-    );
+    return <div className="text-sm text-gray-500 text-center my-4">관련 콘텐츠를 찾는 중...</div>;
   }
 
   if (ideas.length === 0) {
@@ -34,11 +26,13 @@ const RelatedContent: React.FC<RelatedContentProps> = ({ productName }) => {
   }
 
   return (
-    <div className="mt-6 p-4 bg-indigo-50 border border-indigo-200 rounded-lg">
-      <h4 className="text-md font-bold text-indigo-800">함께 보면 좋은 글</h4>
-      <ul className="mt-2 list-disc list-inside space-y-1 text-sm text-indigo-700">
+    <div className="mt-6 p-4 bg-slate-50 rounded-lg">
+      <h4 className="font-bold text-md text-slate-800 mb-2">함께 보면 좋은 글</h4>
+      <ul className="list-disc list-inside space-y-1">
         {ideas.map((idea, index) => (
-          <li key={index}>{idea}</li>
+          <li key={index} className="text-sm text-slate-600 hover:text-sky-600">
+            <a href="#">{idea}</a>
+          </li>
         ))}
       </ul>
     </div>
