@@ -29,10 +29,9 @@ export default defineConfig(({ mode }) => {
       sitemap({
         hostname: 'https://cpb-five.vercel.app',
         dynamicRoutes,
-        // FIX: Explicitly provide an empty array to prevent the sitemap plugin
-        // from generating its own robots.txt, which was causing a build error.
-        // This ensures the static robots.txt from the `public` directory is used instead.
-        robots: [],
+        // FIX: Explicitly disable robots.txt generation to prevent conflicts with the
+        // static file in the `public` directory. This is the definitive fix for the build error.
+        generateRobotsTxt: false,
       }),
     ],
     define: {
