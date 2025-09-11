@@ -1,20 +1,32 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import type { Post, YouTubeVideo } from "../types";
 
-// Fallback if API key is not provided in the environment
-const API_KEY = process.env.API_KEY;
+let ai: GoogleGenAI | null = null;
 
-if (!API_KEY) {
-  console.warn(
-    "API_KEY environment variable not set. AI features will be disabled."
-  );
+function getAiInstance(): GoogleGenAI | null {
+  const API_KEY = process.env.API_KEY;
+  if (!API_KEY) {
+    return null;
+  }
+  if (!ai) {
+    try {
+      ai = new GoogleGenAI({ apiKey: API_KEY });
+    } catch (error) {
+        console.error("Failed to initialize GoogleGenAI:", error);
+        return null;
+    }
+  }
+  return ai;
 }
 
-const ai = new GoogleGenAI({ apiKey: API_KEY! });
 const model = "gemini-2.5-flash";
 
 export async function findYouTubeVideo(post: Post): Promise<YouTubeVideo | null> {
-  if (!API_KEY) return null;
+  const aiInstance = getAiInstance();
+  if (!aiInstance) {
+    console.warn("Gemini AI features disabled: API_KEY is not set.");
+    return null;
+  }
 
   const prompt = `
     Based on the following blog post title and description, find the most relevant and helpful YouTube video ID.
@@ -28,7 +40,7 @@ export async function findYouTubeVideo(post: Post): Promise<YouTubeVideo | null>
   `;
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await aiInstance.models.generateContent({
       model,
       contents: prompt,
       config: {
@@ -56,7 +68,11 @@ export async function findYouTubeVideo(post: Post): Promise<YouTubeVideo | null>
 }
 
 export async function generateRelatedContentIdeas(productTitle: string): Promise<string[]> {
-    if (!API_KEY) return [];
+    const aiInstance = getAiInstance();
+    if (!aiInstance) {
+        console.warn("Gemini AI features disabled: API_KEY is not set.");
+        return [];
+    }
 
     const prompt = `
     You are an expert SEO and content strategist.
@@ -70,7 +86,7 @@ export async function generateRelatedContentIdeas(productTitle: string): Promise
     `;
 
     try {
-        const response = await ai.models.generateContent({
+        const response = await aiInstance.models.generateContent({
             model,
             contents: prompt,
             config: {
