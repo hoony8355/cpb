@@ -8,22 +8,19 @@ interface BlogPostCardProps {
 
 const BlogPostCard: React.FC<BlogPostCardProps> = ({ post }) => {
   return (
-    <Link to={`/posts/${post.slug}`} className="block group bg-white rounded-xl shadow-md overflow-hidden h-full flex flex-col transition-all duration-300 hover:shadow-xl hover:-translate-y-1">
-      {post.coverImage && (
-        <div className="aspect-video overflow-hidden">
-          <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-        </div>
-      )}
-      <div className="p-6 flex flex-col flex-grow">
-        <p className="text-sm text-slate-500 mb-2">{new Date(post.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-        <h2 className="text-xl font-bold text-slate-800 mb-3 group-hover:text-blue-600 transition-colors flex-grow">{post.title}</h2>
-        <p className="text-slate-600 leading-relaxed line-clamp-3 mb-4">{post.description}</p>
-        <div className="mt-auto pt-4 border-t border-slate-100 flex flex-wrap gap-2">
-          {post.keywords.slice(0, 3).map(keyword => (
-            <span key={keyword} className="bg-slate-100 text-slate-700 text-xs font-medium px-2.5 py-1 rounded-full">
-              {keyword}
-            </span>
-          ))}
+    <Link to={`/posts/${post.slug}`} className="group block bg-white rounded-xl shadow-md transition-all duration-300 hover:shadow-lg hover:-translate-y-1 overflow-hidden">
+      <div className="relative">
+        <img className="w-full h-48 object-cover" src={post.coverImage} alt={post.title} />
+        <div className="absolute inset-0 bg-black bg-opacity-20 group-hover:bg-opacity-10 transition-opacity"></div>
+      </div>
+      <div className="p-6">
+        <h2 className="text-xl font-bold text-slate-800 mb-2 group-hover:text-blue-600 transition-colors">{post.title}</h2>
+        <p className="text-slate-600 text-sm mb-4 line-clamp-2">{post.description}</p>
+        <div className="flex items-center text-sm text-slate-500">
+          <img src={post.author.avatar} alt={post.author.name} className="w-8 h-8 rounded-full mr-3" />
+          <span>{post.author.name}</span>
+          <span className="mx-2">&middot;</span>
+          <time dateTime={post.date}>{new Date(post.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</time>
         </div>
       </div>
     </Link>

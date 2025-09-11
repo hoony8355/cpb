@@ -1,60 +1,84 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeRaw from 'rehype-raw';
+import React, { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { getPostBySlug } from '../services/postService';
 import type { Post } from '../types';
 import SeoManager from '../components/SeoManager';
+import AuthorBox from '../components/AuthorBox';
+import Breadcrumbs from '../components/Breadcrumbs';
+import RelatedContent from '../components/RelatedContent';
 
 const PostPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
-  const [post, setPost] = useState<Post | null>(null);
+  const [post, setPost] = useState<Post | undefined | null>(null);
 
   useEffect(() => {
     if (slug) {
-      setPost(getPostBySlug(slug) ?? null);
+      const foundPost = getPostBySlug(slug);
+      setPost(foundPost);
+      // Scroll to top when post changes
+      window.scrollTo(0, 0);
     }
-    window.scrollTo(0, 0);
   }, [slug]);
+  
+  // A simple markdown to HTML converter to render content.
+  const markdownToHtml = (markdown: string) => {
+    let html = '';
+    const blocks = markdown.split(/\n\s*\n/);
+    blocks.forEach(block => {
+      if (block.startsWith('### ')) {
+        html += `<h3 class="text-2xl font-bold mt-8 mb-4 text-slate-800">${block.substring(4)}</h3>`;
+      } else if (block.startsWith('## ')) {
+        html += `<h2 class="text-3xl font-bold mt-10 mb-6 text-slate-900 border-b pb-2">${block.substring(3)}</h2>`;
+      } else if (block.trim()) {
+        html += `<p class="text-lg text-slate-700 leading-relaxed mb-4">${block.replace(/\n/g, '<br/>')}</p>`;
+      }
+    });
+    return html;
+  };
+
+  if (post === null) {
+    return <div>Loading...</div>; // Or a spinner component
+  }
 
   if (!post) {
+    // A simple 404-like message
     return (
         <div className="text-center py-20">
-            <h2 className="text-2xl font-bold">포스트를 찾을 수 없습니다.</h2>
-            <Link to="/" className="text-blue-600 hover:underline mt-4 inline-block">홈으로 돌아가기</Link>
+            <h1 className="text-4xl font-bold">404 - Post Not Found</h1>
+            <p className="mt-4">Sorry, the post you are looking for does not exist.</p>
         </div>
     );
   }
 
   return (
     <>
-      <SeoManager 
-        title={`${post.title} | Trend Spotter`}
+      <SeoManager
+        title={post.title}
         description={post.description}
-        keywords={post.keywords}
-        imageUrl={post.coverImage}
-        post={post}
+        keywords={post.keywords.join(', ')}
+        schemaJson={post.schemaJson}
       />
-      <article className="bg-white p-6 sm:p-8 lg:p-12 rounded-2xl shadow-lg">
-        <header className="mb-8 text-center border-b border-slate-200 pb-8">
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight mb-4">{post.title}</h1>
-          <p className="text-slate-500">{new Date(post.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
-          <div className="mt-6 flex flex-wrap gap-2 justify-center">
-            {post.keywords.map(keyword => (
-              <span key={keyword} className="bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">
-                #{keyword.replace(/\s+/g, '')}
-              </span>
-            ))}
-          </div>
-        </header>
+      <div className="max-w-4xl mx-auto">
+        <Breadcrumbs postTitle={post.title} />
+        <article>
+          <header className="mb-8">
+            <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight mb-4">{post.title}</h1>
+            <p className="text-xl text-slate-600">{post.description}</p>
+            <div className="mt-6">
+              <AuthorBox author={post.author} date={post.date} />
+            </div>
+          </header>
+
+          <img src={post.coverImage} alt={post.title} className="w-full rounded-lg shadow-lg mb-8" />
+
+          <div 
+            className="prose prose-lg max-w-none" 
+            dangerouslySetInnerHTML={{ __html: markdownToHtml(post.content) }}
+          />
+        </article>
         
-        <div className="prose prose-lg max-w-none prose-img:rounded-xl prose-img:mx-auto prose-a:text-blue-600 hover:prose-a:text-blue-800">
-          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
-            {post.content}
-          </ReactMarkdown>
-        </div>
-      </article>
+        <RelatedContent currentPost={post} />
+      </div>
     </>
   );
 };

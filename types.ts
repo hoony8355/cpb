@@ -1,10 +1,16 @@
+export interface Author {
+  name: string;
+  avatar: string;
+}
+
 export interface Post {
   slug: string;
   title: string;
-  date: string;
   description: string;
+  date: string;
+  coverImage: string;
+  author: Author;
   keywords: string[];
   content: string;
-  coverImage?: string;
   schemaJson?: string;
 }
