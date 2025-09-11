@@ -1,5 +1,4 @@
 {
   "name": "Trend Spotter Blog",
-  "description": "A blog built with React, Vite, and Gemini API for content generation and SEO.",
-  "requestFramePermissions": []
+  "description": "A blog built with React, Vite, and Gemini API for content generation and SEO."
 }

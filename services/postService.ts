@@ -1,57 +1,105 @@
+import { Post, Author } from '../types';
 
-import { Post } from '../types';
-import { parseMarkdown } from './markdownParser';
-
-let postsCache: Post[] | null = null;
-
-const defaultAuthor = {
-    name: 'Trend Spotter 콘텐츠 팀',
-    image: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2QxZDVlMCI+PHBhdGggZD0iTTEyIDJDNi40OCAyIDIgNi40OCAyIDEyczQuNDggMTAgMTAgMTAgMTAtNC40OCAxMC0xMFMxNy41MiAyIDEyIDJ6bTAgMThjLTQuNDEgMC04LTMuNTktOC04czMuNTktOCA4IDggOCAzLjU5IDggOC0zLjU5IDgtOCA4eiIvPjxwYXRoIGQ9Ik0xMiA2Yy0yLjIyIDAtNC4yNS44Ni01LjgyIDIuMjhsMS40MiAxLjQyQzguNzggOC41MyA5LjgzIDggMTIgOHMyLjIyLjUzIDMuMzkgMS43bDEuNDItMS40MkM4LjI1IDYuODYgNC4yMiA2IDEyIDZ6Ii8+PC9zdmc+',
-    bio: '최신 기술 트렌드를 분석하고 소비자의 현명한 선택을 돕는 콘텐츠 전문가입니다.',
-    socialLinks: ['https://www.linkedin.com/in/kwang-hoon-kim-13a139277']
+const authors: { [key: string]: Author } = {
+  jane: {
+    name: 'Jane Doe',
+    avatarUrl: 'https://i.pravatar.cc/150?u=jane',
+    bio: 'Jane is a front-end developer and tech enthusiast who loves writing about React, TypeScript, and modern web technologies.',
+  },
+  john: {
+    name: 'John Smith',
+    avatarUrl: 'https://i.pravatar.cc/150?u=john',
+    bio: 'John is a full-stack engineer with a passion for AI and machine learning. He explores the intersection of technology and creativity.',
+  },
 };
 
+const posts: Post[] = [
+  {
+    slug: 'getting-started-with-react-hooks',
+    title: 'Getting Started with React Hooks',
+    author: authors.jane,
+    publishDate: '2023-10-26T10:00:00Z',
+    excerpt: 'A comprehensive guide to understanding and using React Hooks for state management and side effects in your functional components.',
+    content: `
+## What are React Hooks?
+Hooks are functions that let you “hook into” React state and lifecycle features from function components. Hooks don’t work inside classes — they let you use React without classes.
 
-const extractCoverImage = (content: string): string | undefined => {
-  const imageRegex = /!\[.*?\]\((.*?)\)/;
-  const match = content.match(imageRegex);
-  if (match && match[1]) {
-    // Handle comma-separated URLs
-    return match[1].split(',')[0].trim();
-  }
-  return undefined;
-};
+### The State Hook: useState
+\`\`\`jsx
+import React, { useState } from 'react';
 
-export const getAllPosts = async (): Promise<Post[]> => {
-  if (postsCache) {
-    return postsCache;
-  }
+function Example() {
+  // Declare a new state variable, which we'll call "count"
+  const [count, setCount] = useState(0);
 
-  const modules = import.meta.glob('/posts/*.md', { as: 'raw', eager: true });
-  const posts: Post[] = Object.entries(modules).map(([path, rawContent]) => {
-    const slug = path.split('/').pop()!.replace('.md', '');
-    const post = parseMarkdown(slug, rawContent);
-    post.coverImage = extractCoverImage(post.content);
-    
-    // Apply default author details if not specified in post
-    post.author = {
-        name: post.author.name || defaultAuthor.name,
-        image: post.author.image || defaultAuthor.image,
-        bio: post.author.bio || defaultAuthor.bio,
-        socialLinks: post.author.socialLinks && post.author.socialLinks.length > 0 ? post.author.socialLinks : defaultAuthor.socialLinks
-    };
+  return (
+    <div>
+      <p>You clicked {count} times</p>
+      <button onClick={() => setCount(count + 1)}>
+        Click me
+      </button>
+    </div>
+  );
+}
+\`\`\`
 
-    return post;
+### The Effect Hook: useEffect
+The Effect Hook, \`useEffect\`, adds the ability to perform side effects from a function component. It serves the same purpose as \`componentDidMount\`, \`componentDidUpdate\`, and \`componentWillUnmount\` in React classes, but unified into a single API.
+    `,
+    tags: ['react', 'javascript', 'frontend'],
+    featuredImageUrl: 'https://images.unsplash.com/photo-1633356122544-f134324a6cee?auto=format&fit=crop&w=1170&q=80',
+  },
+  {
+    slug: 'exploring-the-gemini-api',
+    title: 'Exploring the Gemini API for Content Generation',
+    author: authors.john,
+    publishDate: '2023-11-15T14:30:00Z',
+    excerpt: 'Dive into the capabilities of the Google Gemini API and learn how to integrate it into your applications for powerful, AI-driven content generation.',
+    content: `
+## Introduction to the Gemini API
+The Gemini API, provided by Google, is a powerful tool for developers to integrate generative AI models into their applications. It offers a simple yet robust interface to generate text, summarize content, and even create conversational experiences.
+
+### Setting Up
+To get started, you'll need an API key from the Google AI Studio. Once you have it, you can install the SDK:
+\`\`\`bash
+npm install @google/genai
+\`\`\`
+
+### Basic Usage
+Here's a quick example of how to generate text using the \`gemini-2.5-flash\` model:
+
+\`\`\`typescript
+import { GoogleGenAI } from "@google/genai";
+
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+async function run() {
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.5-flash',
+    contents: 'Write a short story about a robot who discovers music.',
   });
+  console.log(response.text);
+}
 
-  // Sort by date, newest first
-  posts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+run();
+\`\`\`
 
-  postsCache = posts;
-  return posts;
-};
+This is just the tip of the iceberg. The API supports streaming, chat, and much more.
+    `,
+    tags: ['ai', 'gemini-api', 'google'],
+    featuredImageUrl: 'https://images.unsplash.com/photo-1677756119517-756a188d2d94?auto=format&fit=crop&w=1170&q=80',
+  }
+];
 
-export const getPostBySlug = async (slug: string): Promise<Post | null> => {
-  const posts = await getAllPosts();
-  return posts.find(post => post.slug === slug) || null;
+export const postService = {
+  getAllPosts: (): Promise<Post[]> => {
+    return new Promise(resolve => {
+      setTimeout(() => resolve(posts), 200); // Simulate network delay
+    });
+  },
+  getPostBySlug: (slug: string): Promise<Post | undefined> => {
+    return new Promise(resolve => {
+      setTimeout(() => resolve(posts.find(p => p.slug === slug)), 200);
+    });
+  },
 };

@@ -1,18 +1,14 @@
-
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import sitemap from 'vite-plugin-sitemap'
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [
-    react(),
-    sitemap({
-      hostname: 'https://cpb-five.vercel.app',
-      dynamicRoutes: [], // Posts are discovered via glob, no need to list them here
-    }),
-  ],
+  plugins: [react()],
   define: {
-    'process.env.API_KEY': JSON.stringify(process.env.API_KEY)
+    // This makes process.env available in client-side code, which is necessary for the Gemini API key.
+    // Ensure you have a .env file at the root of your project with VITE_API_KEY=your_key
+    // In the code, use import.meta.env.VITE_API_KEY
+    // For this exercise, we will assume process.env is polyfilled or handled by the execution environment.
+    'process.env': process.env
   }
 })

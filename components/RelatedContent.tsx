@@ -1,38 +1,54 @@
-
-import React, { useEffect, useState } from 'react';
-import { generateRelatedContentIdeas } from '../services/geminiService';
+import React, { useState, useEffect } from 'react';
+import { geminiService } from '../services/geminiService';
 
 interface RelatedContentProps {
-  productName: string;
+  postTitle: string;
 }
 
-const RelatedContent: React.FC<RelatedContentProps> = ({ productName }) => {
-  const [ideas, setIdeas] = useState<string[]>([]);
+const RelatedContent: React.FC<RelatedContentProps> = ({ postTitle }) => {
+  const [topics, setTopics] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setLoading(true);
-    generateRelatedContentIdeas(productName)
-      .then(setIdeas)
-      .finally(() => setLoading(false));
-  }, [productName]);
+    const fetchRelatedTopics = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const relatedTopics = await geminiService.getRelatedTopics(postTitle);
+        setTopics(relatedTopics);
+      } catch (err) {
+        console.error("Failed to fetch related content:", err);
+        setError("Could not load related topics.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (postTitle) {
+      fetchRelatedTopics();
+    }
+  }, [postTitle]);
 
   if (loading) {
-    return <div className="text-sm text-gray-500 text-center my-4">관련 콘텐츠를 찾는 중...</div>;
+    return (
+      <div className="bg-gray-100 p-6 rounded-lg">
+        <h2 className="text-2xl font-bold mb-4">Related Concepts</h2>
+        <p className="text-gray-600">Generating ideas with Gemini...</p>
+      </div>
+    );
   }
 
-  if (ideas.length === 0) {
-    return null;
+  if (error || topics.length === 0) {
+    return null; // Don't render the component if there's an error or no topics
   }
 
   return (
-    <div className="mt-6 p-4 bg-slate-50 rounded-lg">
-      <h4 className="font-bold text-md text-slate-800 mb-2">함께 보면 좋은 글</h4>
-      <ul className="list-disc list-inside space-y-1">
-        {ideas.map((idea, index) => (
-          <li key={index} className="text-sm text-slate-600 hover:text-sky-600">
-            <a href="#">{idea}</a>
-          </li>
+    <div className="bg-gray-100 p-6 rounded-lg">
+      <h2 className="text-2xl font-bold mb-4">Related Concepts (from Gemini)</h2>
+      <ul className="list-disc list-inside space-y-2">
+        {topics.map((topic, index) => (
+          <li key={index} className="text-gray-700">{topic}</li>
         ))}
       </ul>
     </div>
