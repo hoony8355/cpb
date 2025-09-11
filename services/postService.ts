@@ -2,76 +2,73 @@ import { Post } from '../types';
 
 const posts: Post[] = [
   {
-    slug: 'hello-world',
-    title: 'Hello World: My First Blog Post',
-    author: 'John Doe',
-    publishDate: '2023-10-27',
-    excerpt: 'This is the beginning of a beautiful blogging journey. Join me as I explore various topics in technology and life.',
-    content: `
-# Hello World!
+    slug: 'getting-started-with-gemini-api',
+    title: 'Getting Started with the Gemini API',
+    author: 'Jane Smith',
+    date: '2024-05-20',
+    excerpt: 'A comprehensive guide to setting up and making your first call to the Google Gemini API for generative AI tasks.',
+    content: `## Introduction to Gemini
 
-Welcome to my new blog! This is the very first post.
+The Google Gemini API provides powerful models for a wide variety of generative AI applications. This post will walk you through the initial setup.
 
-Here is a list of things I plan to talk about:
-- Web Development
-- AI and Machine Learning
-- Personal Growth
+### Prerequisites
+- A Google Cloud project
+- An API Key for the Gemini API
 
-Stay tuned for more!
-    `,
-    tags: ['welcome', 'tech', 'general'],
-    imageUrl: 'https://via.placeholder.com/800x400',
+### Making a Request
+Here's a simple example of how to generate text content using the Gemini API with TypeScript:
+\`\`\`typescript
+import { GoogleGenAI } from "@google/genai";
+
+const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+
+async function run() {
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.5-flash',
+    contents: 'Write a story about a magic backpack.',
+  });
+  console.log(response.text);
+}
+
+run();
+\`\`\`
+`,
+    tags: ['gemini', 'ai', 'typescript', 'google'],
+    imageUrl: 'https://via.placeholder.com/800x400'
   },
   {
-    slug: 'deep-dive-into-react',
-    title: 'A Deep Dive into React Hooks',
-    author: 'Jane Smith',
-    publishDate: '2023-10-28',
-    excerpt: 'React Hooks have changed the way we write components. Let\'s explore useState, useEffect, and custom hooks in detail.',
-    content: `
-# A Deep Dive into React Hooks
+    slug: 'react-hooks-for-beginners',
+    title: 'React Hooks for Beginners',
+    author: 'John Doe',
+    date: '2024-05-18',
+    excerpt: 'Learn the basics of React Hooks, including useState and useEffect, to manage state and side effects in your functional components.',
+    content: `## What are React Hooks?
 
-React Hooks are functions that let you "hook into" React state and lifecycle features from function components.
+Hooks are functions that let you "hook into" React state and lifecycle features from function components. Hooks don't work inside classes.
 
-## useState
-
+### useState
+The \`useState\` hook is a way to add state to functional components.
 \`\`\`jsx
 const [count, setCount] = useState(0);
 \`\`\`
 
-## useEffect
-
+### useEffect
+The \`useEffect\` hook lets you perform side effects in functional components. Data fetching, setting up a subscription, and manually changing the DOM are all examples of side effects.
 \`\`\`jsx
 useEffect(() => {
   document.title = \`You clicked \${count} times\`;
-}, [count]);
+});
 \`\`\`
-    `,
-    tags: ['react', 'javascript', 'frontend'],
-    imageUrl: 'https://via.placeholder.com/800x400',
-  },
+`,
+    tags: ['react', 'javascript', 'hooks', 'webdev'],
+    imageUrl: 'https://via.placeholder.com/800x400'
+  }
 ];
 
 export const getPosts = (): Promise<Post[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => resolve(posts), 500);
-  });
+  return Promise.resolve(posts);
 };
 
 export const getPostBySlug = (slug: string): Promise<Post | undefined> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const post = posts.find((p) => p.slug === slug);
-      resolve(post);
-    }, 500);
-  });
-};
-
-export const getRelatedPosts = (currentPost: Post): Promise<Post[]> => {
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            const related = posts.filter(p => p.slug !== currentPost.slug && p.tags.some(tag => currentPost.tags.includes(tag)));
-            resolve(related.slice(0, 3));
-        }, 500);
-    });
+  return Promise.resolve(posts.find(post => post.slug === slug));
 };

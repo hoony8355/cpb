@@ -1,50 +1,73 @@
-import React, { useState, useEffect } from 'react';
-import { generateRelatedContent } from '../services/geminiService';
-import { Post, RelatedItem } from '../types';
+import React, { useEffect, useState } from 'react';
+import { getRelatedTopics } from '../services/geminiService';
 
 interface RelatedContentProps {
-    post: Post;
+  postContent: string;
 }
 
-const RelatedContent: React.FC<RelatedContentProps> = ({ post }) => {
-    const [relatedItems, setRelatedItems] = useState<RelatedItem[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+const RelatedContent: React.FC<RelatedContentProps> = ({ postContent }) => {
+  const [topics, setTopics] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        const fetchRelated = async () => {
-            try {
-                setLoading(true);
-                setError(null);
-                const items = await generateRelatedContent(post.title, post.content);
-                setRelatedItems(items);
-            } catch (err) {
-                setError('Failed to load AI-powered related content.');
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
+  useEffect(() => {
+    if (postContent) {
+      setLoading(true);
+      setError(null);
+      getRelatedTopics(postContent)
+        .then(setTopics)
+        .catch(() => setError("Failed to load related topics."))
+        .finally(() => setLoading(false));
+    }
+  }, [postContent]);
 
-        fetchRelated();
-    }, [post]);
+  if (loading) {
+    return <div style={styles.container}>Loading related topics...</div>;
+  }
 
-    if (loading) return <div>Loading related content...</div>;
-    if (error) return <div>{error}</div>;
-    if (!relatedItems || relatedItems.length === 0) return null;
+  if (error) {
+    return <div style={{...styles.container, ...styles.error}}>{error}</div>
+  }
+  
+  if (topics.length === 0) {
+    return null;
+  }
 
-    return (
-        <div style={{ marginTop: '32px', padding: '16px', border: '1px solid #eee', borderRadius: '8px', backgroundColor: '#f9f9f9' }}>
-            <h3>AI-Generated Related Content</h3>
-            <ul>
-                {relatedItems.map((item, index) => (
-                    <li key={index}>
-                        <a href={item.url} target="_blank" rel="noopener noreferrer">{item.title}</a>
-                    </li>
-                ))}
-            </ul>
-        </div>
-    );
+  return (
+    <div style={styles.container}>
+      <h3 style={styles.title}>AI-Generated Related Topics</h3>
+      <ul style={styles.list}>
+        {topics.map((topic, index) => (
+          <li key={index} style={styles.listItem}>{topic}</li>
+        ))}
+      </ul>
+    </div>
+  );
 };
+
+const styles: { [key: string]: React.CSSProperties } = {
+  container: {
+    backgroundColor: '#f8f9fa',
+    padding: '1.5rem',
+    borderRadius: '8px',
+    marginTop: '2rem',
+  },
+  title: {
+    marginTop: 0,
+    marginBottom: '1rem',
+  },
+  list: {
+    listStyle: 'disc',
+    paddingLeft: '20px',
+    margin: 0,
+  },
+  listItem: {
+    marginBottom: '0.5rem',
+  },
+  error: {
+      color: '#dc3545',
+  }
+};
+
 
 export default RelatedContent;

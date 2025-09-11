@@ -5,15 +5,15 @@ import PostPage from './pages/PostPage';
 import NotFoundPage from './pages/NotFoundPage';
 import Header from './components/Header';
 import Footer from './components/Footer';
-import usePageTracking from './hooks/usePageTracking';
+import { usePageTracking } from './hooks/usePageTracking';
 
 function App() {
-  usePageTracking(); // Add page tracking hook
+  usePageTracking();
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+    <div className="app">
       <Header />
-      <main style={{ flex: 1, padding: '20px', maxWidth: '800px', margin: '20px auto', width: '100%' }}>
+      <main style={{ padding: '2rem 0' }}>
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/post/:slug" element={<PostPage />} />
