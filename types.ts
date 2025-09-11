@@ -1,28 +1,23 @@
-export interface Author {
-  name: string;
-  image: string;
-  bio: string;
-  socialLinks?: string[];
-}
-
 export interface Post {
-  slug: string;
+  id: string;
   title: string;
+  author: string;
   date: string;
+  excerpt: string;
+  content: string; // Markdown content
+  tags: string[];
+  relatedPosts?: Post[];
+  seo?: SeoData;
+}
+
+export interface SeoData {
+  title: string;
   description: string;
-  keywords: string[];
-  coverImage: string;
-  author: Author;
-  content: string;
-  schemaJson?: string;
+  keywords: string;
 }
 
-export interface YouTubeVideo {
-  videoId: string;
-  reason: string;
-}
-
-export interface Breadcrumb {
-  name: string;
-  path: string;
+export interface Author {
+    name: string;
+    bio: string;
+    avatarUrl: string;
 }

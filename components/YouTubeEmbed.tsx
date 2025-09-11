@@ -1,24 +1,23 @@
 import React from 'react';
 
 interface YouTubeEmbedProps {
-  embedId: string;
-  title: string;
+    embedId: string;
+    title: string;
 }
 
 const YouTubeEmbed: React.FC<YouTubeEmbedProps> = ({ embedId, title }) => {
-  return (
-    <div className="relative overflow-hidden my-6 shadow-lg rounded-lg" style={{ paddingTop: '56.25%' /* 16:9 Aspect Ratio */ }}>
-      <iframe
-        className="absolute top-0 left-0 w-full h-full"
-        src={`https://www.youtube.com/embed/${embedId}`}
-        title={title || "Embedded YouTube video"}
-        frameBorder="0"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-        loading="lazy"
-      />
-    </div>
-  );
+    return (
+        <div className="video-responsive" style={{ overflow: 'hidden', paddingBottom: '56.25%', position: 'relative', height: 0 }}>
+            <iframe
+                style={{ left: 0, top: 0, height: '100%', width: '100%', position: 'absolute' }}
+                src={`https://www.youtube.com/embed/${embedId}`}
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                title={title}
+            />
+        </div>
+    );
 };
 
 export default YouTubeEmbed;

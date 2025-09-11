@@ -1,70 +1,71 @@
-import type { Post, Author } from '../types';
-import { parseMarkdown, Frontmatter } from './markdownParser';
+import { Post } from '../types';
 
-let postsCache: Post[] | null = null;
+const posts: Post[] = [
+  {
+    id: 'gemini-api-intro',
+    title: 'Getting Started with the Gemini API',
+    author: 'Jane Doe',
+    date: '2024-07-29',
+    excerpt: 'A beginner-friendly guide to using the Google Gemini API for your projects.',
+    content: `
+# Introduction to Gemini API
 
-const defaultAuthor: Author = {
-  name: "Trend Spotter 콘텐츠 팀",
-  image: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='50' fill='%23e0f2fe'%3E%3C/rect%3E%3Cpath d='M30 70 L50 30 L70 70 Z' fill='%2338bdf8' /%3E%3Cpath d='M45 60 L60 40 L75 60 Z' fill='%230ea5e9' fill-opacity='0.8'/%3E%3C/svg%3E",
-  bio: "최신 기술 트렌드를 분석하고 소비자의 현명한 선택을 돕는 콘텐츠 전문가입니다.",
-  socialLinks: ["https://www.linkedin.com/in/kwang-hoon-kim-13a139277"]
+The Google Gemini API is a powerful tool for developers aiming to integrate generative AI into their applications. This post will walk you through the initial setup and a basic example.
+
+## Setup
+
+First, you need to get an API key...
+
+## Example
+
+Here is a simple example using Node.js:
+
+\`\`\`javascript
+console.log("Hello, Gemini!");
+\`\`\`
+`,
+    tags: ['Gemini', 'API', 'AI'],
+  },
+  {
+    id: 'react-hooks-deep-dive',
+    title: 'A Deep Dive into React Hooks',
+    author: 'John Smith',
+    date: '2024-07-25',
+    excerpt: 'Explore advanced concepts and patterns for using React Hooks effectively.',
+    content: `
+# React Hooks: Beyond the Basics
+
+useState and useEffect are just the beginning. Let's explore custom hooks, useReducer, and more.
+
+## Custom Hooks
+
+Creating your own hooks allows you to extract component logic into reusable functions.
+`,
+    tags: ['React', 'JavaScript', 'Frontend'],
+  },
+   {
+    id: 'ai-in-frontend',
+    title: 'The Role of AI in Modern Frontend Development',
+    author: 'Jane Doe',
+    date: '2024-07-22',
+    excerpt: 'Discover how AI is changing the landscape of frontend development, from code generation to automated testing.',
+    content: `
+# AI is transforming Frontend
+
+From Github Copilot to AI-powered design tools, the way we build user interfaces is evolving rapidly.
+`,
+    tags: ['AI', 'Frontend', 'Development'],
+  }
+];
+
+export const getPosts = async (): Promise<Post[]> => {
+  // Simulate network delay
+  await new Promise(res => setTimeout(res, 200));
+  return posts;
 };
 
-function extractCoverImage(content: string): string {
-    const imageRegex = /!\[.*?\]\((.*?)\)/;
-    const match = content.match(imageRegex);
-    if (match && match[1]) {
-        // Handle comma-separated URLs by taking the first one
-        return match[1].split(',')[0].trim();
-    }
-    // Return a default placeholder if no image is found
-    return 'https://via.placeholder.com/800x400.png?text=No+Image+Found';
-}
-
-function getAuthorFromFrontmatter(frontmatter: Frontmatter): Author {
-  if (typeof frontmatter.author === 'string' && frontmatter.author) {
-    return {
-      name: frontmatter.author,
-      image: (frontmatter.authorImage as string) || defaultAuthor.image,
-      bio: (frontmatter.authorBio as string) || `Latest trends and reviews by ${frontmatter.author}.`,
-      socialLinks: (frontmatter.authorSocialLinks as string[]) || [],
-    };
-  }
-  return defaultAuthor;
-}
-
-export function getAllPosts(): Post[] {
-  if (postsCache) {
-    return postsCache;
-  }
-
-  const modules = import.meta.glob('/posts/*.md', { as: 'raw', eager: true });
-  
-  const posts: Post[] = Object.entries(modules).map(([path, rawContent]) => {
-    const slug = path.split('/').pop()?.replace('.md', '') || '';
-    const { frontmatter, content, schemaJson } = parseMarkdown(rawContent);
-
-    return {
-      slug,
-      title: (frontmatter.title as string) || 'Untitled Post',
-      date: (frontmatter.date as string) || new Date().toISOString(),
-      description: (frontmatter.description as string) || '',
-      keywords: (frontmatter.keywords as string[]) || [],
-      coverImage: (frontmatter.coverImage as string) || extractCoverImage(content),
-      author: getAuthorFromFrontmatter(frontmatter),
-      content,
-      schemaJson,
-    };
-  });
-
-  posts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  postsCache = posts;
-  return postsCache;
-}
-
-export function getPostBySlug(slug: string): Post | undefined {
-  if (!postsCache) {
-    getAllPosts();
-  }
-  return postsCache!.find(post => post.slug === slug);
-}
+export const getPostById = async (id: string): Promise<Post | undefined> => {
+  // Simulate network delay
+  await new Promise(res => setTimeout(res, 200));
+  return posts.find(post => post.id === id);
+};

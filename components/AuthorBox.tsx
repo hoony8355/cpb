@@ -1,43 +1,37 @@
 import React from 'react';
-import type { Author } from '../types';
 
-interface AuthorBoxProps {
-  author: Author;
-  date: string;
+// In a real app, this would fetch author details from a service
+const authorDetails = {
+    'Jane Doe': {
+        bio: 'Jane is a Staff Engineer focused on AI and developer tools.',
+        avatarUrl: `https://i.pravatar.cc/150?u=jane_doe`
+    },
+    'John Smith': {
+        bio: 'John is a frontend expert who loves React and TypeScript.',
+        avatarUrl: `https://i.pravatar.cc/150?u=john_smith`
+    }
 }
 
-const AuthorBox: React.FC<AuthorBoxProps> = ({ author, date }) => {
-  const formattedDate = new Date(date).toLocaleDateString('ko-KR', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
+interface AuthorBoxProps {
+    authorName: string;
+}
 
-  return (
-    <div className="flex items-start bg-slate-100 p-6 rounded-xl border border-slate-200">
-      <img
-        src={author.image}
-        alt={author.name}
-        className="w-16 h-16 rounded-full mr-5 object-cover shadow-md"
-        loading="lazy"
-        decoding="async"
-      />
-      <div className="flex-1">
-        <p className="font-bold text-lg text-slate-800">{author.name}</p>
-        <p className="text-sm text-slate-600 mt-1">{author.bio}</p>
-        <div className="flex items-center justify-between mt-3 text-sm text-slate-500">
-          <p>
-            게시일: <time dateTime={date}>{formattedDate}</time>
-          </p>
-          {author.socialLinks && author.socialLinks.length > 0 && (
-             <a href={author.socialLinks[0]} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 font-semibold">
-                Follow
-             </a>
-          )}
+const AuthorBox: React.FC<AuthorBoxProps> = ({ authorName }) => {
+    const author = authorName in authorDetails ? authorDetails[authorName as keyof typeof authorDetails] : null;
+
+    if (!author) {
+        return null;
+    }
+
+    return (
+        <div className="author-box" style={{ marginTop: '3rem', paddingTop: '1.5rem', borderTop: '1px solid #eee', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <img src={author.avatarUrl} alt={authorName} style={{ borderRadius: '50%', width: '80px', height: '80px' }} />
+            <div className="author-info">
+                <h3 style={{ margin: '0 0 0.5rem 0' }}>About {authorName}</h3>
+                <p style={{ margin: 0 }}>{author.bio}</p>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default AuthorBox;
