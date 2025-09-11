@@ -58,8 +58,9 @@
     "rehype-raw": "https://esm.sh/rehype-raw@7.0.0",
     "gray-matter": "https://esm.sh/gray-matter@4.0.3",
     "react-helmet-async": "https://esm.sh/react-helmet-async@2.0.5",
-    "react/": "https://aistudiocdn.com/react@^19.1.1/",
+    "buffer": "https://esm.sh/buffer@6.0.3",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "react/": "https://aistudiocdn.com/react@^19.1.1/",
     "vite": "https://aistudiocdn.com/vite@^7.1.5",
     "@vitejs/plugin-react": "https://aistudiocdn.com/@vitejs/plugin-react@^5.0.2",
     "vite-plugin-sitemap": "https://aistudiocdn.com/vite-plugin-sitemap@^0.8.2"
@@ -70,6 +71,12 @@
   </head>
   <body class="bg-gray-50">
     <div id="root"></div>
+    <script type="module">
+      // FIX: Polyfill the 'Buffer' global, which is required by the 'gray-matter'
+      // library to parse markdown frontmatter in a browser environment.
+      import { Buffer } from 'buffer';
+      window.Buffer = Buffer;
+    </script>
     <script type="module" src="/index.tsx"></script>
   </body>
 </html>
