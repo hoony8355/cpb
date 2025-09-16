@@ -1,5 +1,23 @@
 {
   "rewrites": [
-    { "source": "/post/:slug*", "destination": "/index.html" }
+    { "source": "/sitemap.xml", "destination": "/sitemap.xml" },
+    { "source": "/robots.txt", "destination": "/robots.txt" },
+
+    // 정적 자산(있다면) 예외
+    { "source": "/assets/(.*)", "destination": "/assets/$1" },
+    { "source": "/images/(.*)", "destination": "/images/$1" },
+
+    // 마지막에 catch-all
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/sitemap.xml",
+      "headers": [{ "key": "Content-Type", "value": "application/xml; charset=utf-8" }]
+    },
+    {
+      "source": "/robots.txt",
+      "headers": [{ "key": "Content-Type", "value": "text/plain; charset=utf-8" }]
+    }
   ]
 }
