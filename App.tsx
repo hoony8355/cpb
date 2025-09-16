@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { HashRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 // FIX: Import HelmetProvider to wrap the application for SEO management.
 import { HelmetProvider } from 'react-helmet-async';
 import Header from './components/Header';
