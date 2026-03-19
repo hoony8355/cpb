@@ -13,13 +13,15 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Update markdown files in posts
+      - name: Update markdown files in posts safely
         shell: bash
         run: |
           python <<'PY'
@@ -27,68 +29,86 @@ jobs:
           import re
 
           POSTS_DIR = Path("posts")
-          md_files = list(POSTS_DIR.glob("*.md"))
+          md_files = sorted(POSTS_DIR.glob("*.md"))
 
           NOTICE_TEXT = "이 게시물은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다."
           NOTICE_HTML = (
-              '<p style="color:#d60000; font-size:1.15em; font-weight:700; margin:0 0 16px 0;">'
+              '<p style="color:#d60000; font-size:1.15em; font-weight:700; margin:16px 0 16px 0;">'
               + NOTICE_TEXT +
               '</p>'
           )
 
+          # 본문 안 기존 고지문 제거용
           DISCLOSURE_PATTERNS = [
-              r"\*?\s*이\s*포스팅은\s*쿠팡\s*파트너스\s*활동의\s*일환으로[,]?\s*(이에\s*따른\s*)?일정액의\s*수수료를\s*제공받습니다\.?\s*\*?",
-              r"\*?\s*이\s*게시물은\s*쿠팡\s*파트너스\s*활동의\s*일환으로[,]?\s*(이에\s*따른\s*)?일정액의\s*수수료를\s*제공받습니다\.?\s*\*?",
-              r"\*?\s*쿠팡\s*파트너스\s*활동을\s*통해\s*일정액의\s*수수료를\s*제공받습니다\.?\s*\*?",
-              r"\*?\s*소정의\s*수수료를\s*지급받을\s*수\s*있음\.?\s*\*?",
+              r'<p[^>]*>\s*이\s*(포스팅|게시물)은\s*쿠팡\s*파트너스\s*활동의\s*일환으로[,]?\s*(이에\s*따른\s*)?일정액의\s*수수료를\s*제공받습니다\.?\s*</p>\s*',
+              r'\*?\s*이\s*포스팅은\s*쿠팡\s*파트너스\s*활동의\s*일환으로[,]?\s*(이에\s*따른\s*)?일정액의\s*수수료를\s*제공받습니다\.?\s*\*?\s*',
+              r'\*?\s*이\s*게시물은\s*쿠팡\s*파트너스\s*활동의\s*일환으로[,]?\s*(이에\s*따른\s*)?일정액의\s*수수료를\s*제공받습니다\.?\s*\*?\s*',
+              r'\*?\s*쿠팡\s*파트너스\s*활동을\s*통해\s*일정액의\s*수수료를\s*제공받습니다\.?\s*\*?\s*',
+              r'\*?\s*소정의\s*수수료를\s*지급받을\s*수\s*있음\.?\s*\*?\s*',
           ]
 
-          def remove_existing_disclosures(text: str) -> str:
-              # 기존 HTML 고지 제거
-              text = re.sub(
-                  r'<p[^>]*>\s*이\s*(포스팅|게시물)은\s*쿠팡\s*파트너스\s*활동의\s*일환으로[,]?\s*(이에\s*따른\s*)?일정액의\s*수수료를\s*제공받습니다\.?\s*</p>\s*',
-                  '',
-                  text,
-                  flags=re.IGNORECASE
-              )
+          def split_frontmatter(text: str):
+              # 프론트매터가 있으면 정확히 보존하고, 본문만 따로 분리
+              if not text.startswith('---\n'):
+                  return '', text
 
-              # 일반 텍스트/기울임꼴 고지 제거
+              second = text.find('\n---\n', 4)
+              if second == -1:
+                  return '', text
+
+              second_end = second + len('\n---\n')
+              frontmatter = text[:second_end]
+              body = text[second_end:]
+              return frontmatter, body
+
+          def clean_body(body: str) -> str:
+              cleaned = body
+
               for pattern in DISCLOSURE_PATTERNS:
-                  text = re.sub(pattern, '', text, flags=re.IGNORECASE)
+                  cleaned = re.sub(pattern, '', cleaned, flags=re.IGNORECASE)
 
-              # 고지문 때문에 남은 단독 구분선 정리
-              text = re.sub(r'\n---\n(?=\s*\n|[가-힣A-Za-z0-9#<])', '\n', text)
+              # 맨 앞 공백 줄만 정리
+              cleaned = cleaned.lstrip('\n')
 
-              # 빈 줄 정리
-              text = re.sub(r'\n{3,}', '\n\n', text).strip() + '\n'
-              return text
+              # 과도한 빈 줄만 살짝 정리
+              cleaned = re.sub(r'\n{4,}', '\n\n\n', cleaned)
 
-          def insert_notice_below_frontmatter(text: str) -> str:
-              if NOTICE_HTML in text:
-                  return text
+              return cleaned
 
-              fm_match = re.match(r'^---\n.*?\n---\n*', text, flags=re.DOTALL)
-              if fm_match:
-                  frontmatter = fm_match.group(0).rstrip() + '\n\n'
-                  body = text[fm_match.end():].lstrip()
-                  return frontmatter + NOTICE_HTML + '\n\n' + body
+          def add_notice_to_body(body: str) -> str:
+              if NOTICE_TEXT in body:
+                  return body
 
-              return NOTICE_HTML + '\n\n' + text.lstrip()
+              body = body.lstrip('\n')
+              return NOTICE_HTML + '\n\n' + body
 
           if not POSTS_DIR.exists():
               raise SystemExit("posts 폴더를 찾을 수 없습니다.")
 
-          print(f"posts/*.md files found: {len(md_files)}")
           if not md_files:
               raise SystemExit("posts 폴더 안에 .md 파일이 없습니다.")
+
+          print(f"posts/*.md files found: {len(md_files)}")
 
           changed_files = []
 
           for md_file in md_files:
               original = md_file.read_text(encoding="utf-8")
 
-              updated = remove_existing_disclosures(original)
-              updated = insert_notice_below_frontmatter(updated)
+              frontmatter, body = split_frontmatter(original)
+
+              # 프론트매터가 없는 파일은 건너뜀
+              if not frontmatter:
+                  print(f"[SKIP - no frontmatter] {md_file.name}")
+                  continue
+
+              cleaned_body = clean_body(body)
+              updated_body = add_notice_to_body(cleaned_body)
+
+              # 프론트매터는 절대 수정하지 않음
+              updated = frontmatter + updated_body
+
+              # 파일 끝 줄바꿈 1개로 통일
               updated = updated.rstrip() + '\n'
 
               if original != updated:
@@ -112,6 +132,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
-            git commit -m "Add Coupang disclosure to posts"
+            git commit -m "Safely add Coupang disclosure to posts body only"
             git push
           fi
