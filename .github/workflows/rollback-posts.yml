@@ -1,0 +1,43 @@
+name: Roll back posts folder
+
+on:
+  workflow_dispatch:
+    inputs:
+      restore_from:
+        description: "복원 기준 커밋(예: HEAD~1 또는 특정 커밋 SHA)"
+        required: true
+        default: "HEAD~1"
+
+permissions:
+  contents: write
+
+jobs:
+  rollback:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Show recent commits
+        run: git log --oneline -n 10
+
+      - name: Restore posts from selected commit
+        run: |
+          git checkout "${{ github.event.inputs.restore_from }}" -- posts
+          git status
+
+      - name: Commit and push rollback
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add posts
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Rollback posts folder to ${{ github.event.inputs.restore_from }}"
+            git push
+          fi
