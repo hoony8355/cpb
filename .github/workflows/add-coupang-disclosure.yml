@@ -1,0 +1,95 @@
+name: Add Coupang disclosure to posts
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-posts:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Update markdown files
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          import re
+
+          POSTS_DIR = Path("posts")
+
+          NOTICE_TEXT = "이 게시물은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다."
+          NOTICE_HTML = (
+              '<p style="color:#d60000; font-size:1.15em; font-weight:700; margin:0 0 16px 0;">'
+              + NOTICE_TEXT +
+              '</p>\n'
+          )
+
+          DISCLOSURE_PATTERNS = [
+              r"\*?이 포스팅은 쿠팡 파트너스 활동의 일환으로,\s*이에 따른 일정액의 수수료를 제공받습니다\.?\*?",
+              r"\*?이 게시물은 쿠팡 파트너스 활동의 일환으로,\s*이에 따른 일정액의 수수료를 제공받습니다\.?\*?",
+              r"\*?쿠팡 파트너스 활동을 통해 일정액의 수수료를 제공받습니다\.?\*?",
+              r"\*?소정의 수수료를 지급받을 수 있음\.?\*?",
+          ]
+
+          def remove_existing_disclosures(text: str) -> str:
+              for pattern in DISCLOSURE_PATTERNS:
+                  text = re.sub(pattern, "", text, flags=re.IGNORECASE)
+              text = re.sub(r"\n{3,}", "\n\n", text).strip() + "\n"
+              return text
+
+          def insert_notice(text: str) -> str:
+              if NOTICE_TEXT in text and "color:#d60000" in text:
+                  return text
+
+              fm_match = re.match(r"^---\n.*?\n---\n+", text, flags=re.DOTALL)
+              if fm_match:
+                  frontmatter = fm_match.group(0)
+                  body = text[fm_match.end():].lstrip()
+                  return frontmatter + "\n" + NOTICE_HTML + "\n" + body
+
+              return NOTICE_HTML + "\n" + text.lstrip()
+
+          if not POSTS_DIR.exists():
+              raise SystemExit("posts 폴더를 찾을 수 없습니다.")
+
+          changed = []
+          for md_file in POSTS_DIR.rglob("*.md"):
+              original = md_file.read_text(encoding="utf-8")
+              updated = remove_existing_disclosures(original)
+              updated = insert_notice(updated)
+              updated = updated.rstrip() + "\n"
+
+              if original != updated:
+                  md_file.write_text(updated, encoding="utf-8")
+                  changed.append(str(md_file))
+
+          print(f"Changed files: {len(changed)}")
+          for f in changed:
+              print(f"- {f}")
+          PY
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: "Add required Coupang disclosure to all posts"
+          title: "Add required Coupang disclosure to posts"
+          body: |
+            쿠팡 파트너스 고지 문구를 모든 posts/*.md 상단에 추가했습니다.
+
+            - 프론트매터 바로 아래 삽입
+            - 빨간색 HTML 문구 적용
+            - 기존 하단 고지문 제거/정리
+          branch: chore/add-coupang-disclosure
+          delete-branch: true
