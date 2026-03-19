@@ -5,14 +5,13 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
 
 jobs:
   update-posts:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Python
@@ -20,7 +19,7 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Update markdown files
+      - name: Update markdown files in posts
         shell: bash
         run: |
           python <<'PY'
@@ -28,68 +27,91 @@ jobs:
           import re
 
           POSTS_DIR = Path("posts")
+          md_files = list(POSTS_DIR.glob("*.md"))
 
           NOTICE_TEXT = "이 게시물은 쿠팡 파트너스 활동의 일환으로, 이에 따른 일정액의 수수료를 제공받습니다."
           NOTICE_HTML = (
               '<p style="color:#d60000; font-size:1.15em; font-weight:700; margin:0 0 16px 0;">'
               + NOTICE_TEXT +
-              '</p>\n'
+              '</p>'
           )
 
           DISCLOSURE_PATTERNS = [
-              r"\*?이 포스팅은 쿠팡 파트너스 활동의 일환으로,\s*이에 따른 일정액의 수수료를 제공받습니다\.?\*?",
-              r"\*?이 게시물은 쿠팡 파트너스 활동의 일환으로,\s*이에 따른 일정액의 수수료를 제공받습니다\.?\*?",
-              r"\*?쿠팡 파트너스 활동을 통해 일정액의 수수료를 제공받습니다\.?\*?",
-              r"\*?소정의 수수료를 지급받을 수 있음\.?\*?",
+              r"\*?\s*이\s*포스팅은\s*쿠팡\s*파트너스\s*활동의\s*일환으로[,]?\s*(이에\s*따른\s*)?일정액의\s*수수료를\s*제공받습니다\.?\s*\*?",
+              r"\*?\s*이\s*게시물은\s*쿠팡\s*파트너스\s*활동의\s*일환으로[,]?\s*(이에\s*따른\s*)?일정액의\s*수수료를\s*제공받습니다\.?\s*\*?",
+              r"\*?\s*쿠팡\s*파트너스\s*활동을\s*통해\s*일정액의\s*수수료를\s*제공받습니다\.?\s*\*?",
+              r"\*?\s*소정의\s*수수료를\s*지급받을\s*수\s*있음\.?\s*\*?",
           ]
 
           def remove_existing_disclosures(text: str) -> str:
+              # 기존 HTML 고지 제거
+              text = re.sub(
+                  r'<p[^>]*>\s*이\s*(포스팅|게시물)은\s*쿠팡\s*파트너스\s*활동의\s*일환으로[,]?\s*(이에\s*따른\s*)?일정액의\s*수수료를\s*제공받습니다\.?\s*</p>\s*',
+                  '',
+                  text,
+                  flags=re.IGNORECASE
+              )
+
+              # 일반 텍스트/기울임꼴 고지 제거
               for pattern in DISCLOSURE_PATTERNS:
-                  text = re.sub(pattern, "", text, flags=re.IGNORECASE)
-              text = re.sub(r"\n{3,}", "\n\n", text).strip() + "\n"
+                  text = re.sub(pattern, '', text, flags=re.IGNORECASE)
+
+              # 고지문 때문에 남은 단독 구분선 정리
+              text = re.sub(r'\n---\n(?=\s*\n|[가-힣A-Za-z0-9#<])', '\n', text)
+
+              # 빈 줄 정리
+              text = re.sub(r'\n{3,}', '\n\n', text).strip() + '\n'
               return text
 
-          def insert_notice(text: str) -> str:
-              if NOTICE_TEXT in text and "color:#d60000" in text:
+          def insert_notice_below_frontmatter(text: str) -> str:
+              if NOTICE_HTML in text:
                   return text
 
-              fm_match = re.match(r"^---\n.*?\n---\n+", text, flags=re.DOTALL)
+              fm_match = re.match(r'^---\n.*?\n---\n*', text, flags=re.DOTALL)
               if fm_match:
-                  frontmatter = fm_match.group(0)
+                  frontmatter = fm_match.group(0).rstrip() + '\n\n'
                   body = text[fm_match.end():].lstrip()
-                  return frontmatter + "\n" + NOTICE_HTML + "\n" + body
+                  return frontmatter + NOTICE_HTML + '\n\n' + body
 
-              return NOTICE_HTML + "\n" + text.lstrip()
+              return NOTICE_HTML + '\n\n' + text.lstrip()
 
           if not POSTS_DIR.exists():
               raise SystemExit("posts 폴더를 찾을 수 없습니다.")
 
-          changed = []
-          for md_file in POSTS_DIR.rglob("*.md"):
+          print(f"posts/*.md files found: {len(md_files)}")
+          if not md_files:
+              raise SystemExit("posts 폴더 안에 .md 파일이 없습니다.")
+
+          changed_files = []
+
+          for md_file in md_files:
               original = md_file.read_text(encoding="utf-8")
+
               updated = remove_existing_disclosures(original)
-              updated = insert_notice(updated)
-              updated = updated.rstrip() + "\n"
+              updated = insert_notice_below_frontmatter(updated)
+              updated = updated.rstrip() + '\n'
 
               if original != updated:
                   md_file.write_text(updated, encoding="utf-8")
-                  changed.append(str(md_file))
+                  changed_files.append(md_file.name)
 
-          print(f"Changed files: {len(changed)}")
-          for f in changed:
-              print(f"- {f}")
+          print(f"changed files: {len(changed_files)}")
+          for name in changed_files:
+              print(f" - {name}")
           PY
 
-      - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v7
-        with:
-          commit-message: "Add required Coupang disclosure to all posts"
-          title: "Add required Coupang disclosure to posts"
-          body: |
-            쿠팡 파트너스 고지 문구를 모든 posts/*.md 상단에 추가했습니다.
+      - name: Commit and push changes
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-            - 프론트매터 바로 아래 삽입
-            - 빨간색 HTML 문구 적용
-            - 기존 하단 고지문 제거/정리
-          branch: chore/add-coupang-disclosure
-          delete-branch: true
+          git add posts/*.md
+          git status
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Add Coupang disclosure to posts"
+            git push
+          fi
