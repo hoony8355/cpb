@@ -27,7 +27,8 @@ function lastmodOf(fp) {
 
 function buildUrls() {
   const urls = [
-    { loc: `${BASE}/`, lastmod: new Date().toISOString(), cf: 'weekly', pri: '1.0' }
+    { loc: `${BASE}/`, lastmod: new Date().toISOString(), cf: 'daily', pri: '1.0' },
+    { loc: `${BASE}/all-posts.html`, lastmod: new Date().toISOString(), cf: 'daily', pri: '0.9' }
   ];
 
   for (const name of listMarkdown()) {

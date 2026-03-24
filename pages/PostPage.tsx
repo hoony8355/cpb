@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { Helmet } from 'react-helmet-async';
 
-import { getPostBySlug } from '../services/postService';
+import { getAllPosts, getPostBySlug } from '../services/postService';
 import { findYouTubeVideo } from '../services/geminiService';
 import { Post, YouTubeVideo } from '../types';
 
@@ -29,6 +29,23 @@ const slugify = (s: string) =>
     .replace(/^-|-$/g, '');
 
 const ORIGIN = 'https://cpb-five.vercel.app';
+const headingIdFromText = (text: string, fallback: string) => {
+  const normalized = text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\p{L}\p{N}\s-]/gu, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+
+  return normalized || fallback;
+};
+const extractPlainText = (value: React.ReactNode): string => {
+  if (typeof value === 'string' || typeof value === 'number') return String(value);
+  if (Array.isArray(value)) return value.map(extractPlainText).join('');
+  if (React.isValidElement(value)) return extractPlainText(value.props.children);
+  return '';
+};
 
 const PostPage: React.FC = () => {
   const { slug = '' } = useParams<{ slug: string }>();
@@ -40,6 +57,56 @@ const PostPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [video, setVideo] = useState<YouTubeVideo | null>(null);
+  const [activeSection, setActiveSection] = useState<string>('');
+  const [quickNextPost, setQuickNextPost] = useState<Post | null>(null);
+
+  const tableOfContents = useMemo(() => {
+    if (!post) return [];
+    const headingRegex = /^(##|###)\s+(.+)$/gm;
+    const matches = Array.from(post.content.matchAll(headingRegex));
+    return matches.map((match, index) => {
+      const level = match[1].length;
+      const title = match[2].replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').trim();
+      const id = headingIdFromText(title, `section-${index + 1}`);
+      return { level, title, id };
+    });
+  }, [post]);
+
+  const readingTimeMinutes = useMemo(() => {
+    if (!post) return 1;
+    const plainText = post.content
+      .replace(/```[\s\S]*?```/g, ' ')
+      .replace(/!\[.*?\]\(.*?\)/g, ' ')
+      .replace(/\[([^\]]+)\]\((.*?)\)/g, '$1')
+      .replace(/[#>*`~-]/g, ' ');
+    const words = plainText.trim().split(/\s+/).filter(Boolean).length;
+    return Math.max(1, Math.ceil(words / 250));
+  }, [post]);
+  const sectionSummaries = useMemo(() => {
+    if (!post) return {};
+    const lines = post.content.split('\n');
+    const map: Record<string, string> = {};
+
+    for (let i = 0; i < lines.length; i += 1) {
+      const line = lines[i].trim();
+      const headingMatch = line.match(/^(##|###)\s+(.+)$/);
+      if (!headingMatch) continue;
+
+      const headingText = headingMatch[2].replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').trim();
+      const id = headingIdFromText(headingText, `section-${i}`);
+
+      let summary = '';
+      for (let j = i + 1; j < lines.length; j += 1) {
+        const candidate = lines[j].trim();
+        if (!candidate || candidate.startsWith('#') || candidate.startsWith('![') || candidate.startsWith('- ')) continue;
+        if (candidate.startsWith('<')) continue;
+        summary = candidate.replace(/[*`_>#-]/g, '').slice(0, 120);
+        break;
+      }
+      map[id] = summary;
+    }
+    return map;
+  }, [post]);
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -62,6 +129,15 @@ const PostPage: React.FC = () => {
         if (fetchedPost) {
           // 부가 영상 탐색(비동기)
           findYouTubeVideo(fetchedPost).then(setVideo).catch(() => {});
+          const allPosts = await getAllPosts();
+          const candidate = allPosts.find(
+            (item) =>
+              item.slug !== fetchedPost.slug &&
+              item.keywords?.some((keyword) => fetchedPost.keywords?.includes(keyword))
+          );
+          setQuickNextPost(candidate || allPosts.find((item) => item.slug !== fetchedPost.slug) || null);
+        } else {
+          setQuickNextPost(null);
         }
       } catch (err) {
         console.error('Error fetching post:', err);
@@ -73,6 +149,33 @@ const PostPage: React.FC = () => {
 
     fetchPost();
   }, [cleanSlug, slug]);
+
+  useEffect(() => {
+    if (tableOfContents.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+
+        if (visible[0]?.target?.id) {
+          setActiveSection(visible[0].target.id);
+        }
+      },
+      {
+        rootMargin: '0px 0px -70% 0px',
+        threshold: [0.1, 0.5, 1.0],
+      }
+    );
+
+    tableOfContents.forEach((item) => {
+      const element = document.getElementById(item.id);
+      if (element) observer.observe(element);
+    });
+
+    return () => observer.disconnect();
+  }, [tableOfContents]);
 
   // 로딩
   if (loading) {
@@ -113,33 +216,130 @@ const PostPage: React.FC = () => {
 
   const canonicalUrl = `${ORIGIN}/post/${post.slug}`;
   const keywords = Array.isArray(post.keywords) ? post.keywords.join(', ') : '';
+  const articleSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: post.title,
+    description: post.description,
+    datePublished: post.date,
+    dateModified: post.date,
+    author: {
+      '@type': 'Person',
+      name: post.author?.name || 'Trend Spotter 콘텐츠 팀',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Trend Spotter',
+      url: ORIGIN,
+    },
+    mainEntityOfPage: canonicalUrl,
+    image: post.coverImage ? [post.coverImage] : undefined,
+    keywords,
+  };
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: '홈',
+        item: ORIGIN,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: post.title,
+        item: canonicalUrl,
+      },
+    ],
+  };
+  const faqSchema =
+    post.faq && post.faq.length > 0
+      ? {
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: post.faq.map((item) => ({
+            '@type': 'Question',
+            name: item.question,
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: item.answer,
+            },
+          })),
+        }
+      : null;
+  const productListSchema =
+    post.products && post.products.length > 0
+      ? {
+          '@context': 'https://schema.org',
+          '@type': 'ItemList',
+          itemListElement: post.products.map((product, index) => ({
+            '@type': 'ListItem',
+            position: index + 1,
+            item: {
+              '@type': 'Product',
+              name: product.name,
+              description: product.description,
+              url: product.link,
+              image: product.imageUrl,
+              aggregateRating:
+                product.rating && product.reviewCount
+                  ? {
+                      '@type': 'AggregateRating',
+                      ratingValue: product.rating,
+                      reviewCount: product.reviewCount,
+                    }
+                  : undefined,
+            },
+          })),
+        }
+      : null;
+  const tableOfContentsSchema =
+    tableOfContents.length > 0
+      ? {
+          '@context': 'https://schema.org',
+          '@type': 'ItemList',
+          name: `${post.title} 목차`,
+          itemListElement: tableOfContents.map((item, index) => ({
+            '@type': 'ListItem',
+            position: index + 1,
+            name: item.title,
+            url: `${canonicalUrl}#${item.id}`,
+          })),
+        }
+      : null;
+  const schemaGraph = {
+    '@context': 'https://schema.org',
+    '@graph': [articleSchema, breadcrumbSchema, faqSchema, productListSchema, tableOfContentsSchema].filter(Boolean),
+  };
 
   return (
     <>
-      {/* 기존 SEO 매니저 유지 + 캐노니컬/OG를 Helmet으로 보강 */}
       <SeoManager
         title={`${post.title} | Trend Spotter`}
         description={post.description}
         keywords={keywords}
+        canonicalUrl={canonicalUrl}
+        ogImage={post.coverImage}
+        type="article"
       />
 
       <Helmet>
-        <link rel="canonical" href={canonicalUrl} />
-        <meta property="og:url" content={canonicalUrl} />
-        <meta property="og:title" content={`${post.title} | Trend Spotter`} />
-        {post.description && <meta property="og:description" content={post.description} />}
-        {post.coverImage && <meta property="og:image" content={post.coverImage} />}
-        <meta name="robots" content="index,follow" />
+        <script type="application/ld+json">{JSON.stringify(schemaGraph)}</script>
       </Helmet>
 
-      <div className="container mx-auto px-4 py-8">
-        <article className="max-w-3xl mx-auto">
+      <div className="container mx-auto px-4 py-8 md:py-10">
+        <article className="max-w-3xl mx-auto content-card p-5 md:p-8">
           <Breadcrumbs postTitle={post.title} />
 
-          <header className="mb-8">
+          <header className="mb-8 pb-6 border-b border-slate-100">
             <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-3">{post.title}</h1>
             <p className="text-gray-500 text-sm">
-              {new Date(post.date).toLocaleDateString()} by {post.author.name}
+              {new Date(post.date).toLocaleDateString()} by {post.author.name} · 읽기 약 {readingTimeMinutes}분
+            </p>
+            <p className="text-xs text-gray-400 mt-1">
+              최종 검수: {new Date().toLocaleDateString()} · 가격/혜택 정보는 수시로 변동될 수 있습니다.
             </p>
           </header>
 
@@ -152,7 +352,101 @@ const PostPage: React.FC = () => {
           )}
 
           <div className="prose prose-slate max-w-none lg:prose-lg mb-12">
-            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+            {tableOfContents.length > 0 && (
+              <nav
+                aria-label="Table of contents"
+                className="mb-8 rounded-xl border border-slate-200 bg-slate-50 p-4 not-prose sticky top-20 z-20"
+              >
+                <p className="text-sm font-semibold text-slate-700 mb-3">목차</p>
+                <ul className="space-y-2 text-sm">
+                  {tableOfContents.map((item, index) => (
+                    <li key={`${item.id}-${index}`} className={item.level === 3 ? 'ml-4' : ''}>
+                      <a
+                        href={`#${item.id}`}
+                        className={`hover:underline ${
+                          activeSection === item.id ? 'text-sky-900 font-semibold' : 'text-sky-700 hover:text-sky-900'
+                        }`}
+                      >
+                        {item.title}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+                {activeSection && sectionSummaries[activeSection] && (
+                  <div className="mt-4 rounded-md bg-white border border-slate-200 p-3">
+                    <p className="text-xs text-slate-500 mb-1">현재 섹션 요약</p>
+                    <p className="text-sm text-slate-700">{sectionSummaries[activeSection]}</p>
+                  </div>
+                )}
+              </nav>
+            )}
+
+            {quickNextPost && (
+              <aside className="not-prose mb-8 rounded-xl border border-sky-200 bg-gradient-to-r from-sky-50 to-cyan-50 p-4">
+                <p className="text-xs text-sky-700 font-semibold mb-2">다음 추천 글</p>
+                <Link to={`/post/${quickNextPost.slug}`} className="text-sky-900 font-semibold hover:underline">
+                  {quickNextPost.title}
+                </Link>
+              </aside>
+            )}
+
+            {post.products && post.products.length > 0 && (
+              <section className="not-prose mb-8 overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
+                <table className="min-w-full text-sm">
+                  <thead className="bg-slate-100 text-slate-700">
+                    <tr>
+                      <th className="px-3 py-2 text-left">순위</th>
+                      <th className="px-3 py-2 text-left">상품명</th>
+                      <th className="px-3 py-2 text-left">핵심 포인트</th>
+                      <th className="px-3 py-2 text-left">링크</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {post.products.map((product, index) => (
+                      <tr key={index} className="border-t border-slate-100">
+                        <td className="px-3 py-2 font-semibold">{index + 1}</td>
+                        <td className="px-3 py-2">{product.name}</td>
+                        <td className="px-3 py-2 text-slate-600">{product.description?.slice(0, 80)}</td>
+                        <td className="px-3 py-2">
+                          <a
+                            href={product.link}
+                            target="_blank"
+                            rel="noopener sponsored"
+                            className="text-sky-700 hover:text-sky-900 hover:underline"
+                          >
+                            보러가기
+                          </a>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </section>
+            )}
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeRaw]}
+              components={{
+                h2: ({ children, ...props }) => {
+                  const text = extractPlainText(children);
+                  const id = headingIdFromText(text, 'section');
+                  return (
+                    <h2 id={id} {...props}>
+                      {children}
+                    </h2>
+                  );
+                },
+                h3: ({ children, ...props }) => {
+                  const text = extractPlainText(children);
+                  const id = headingIdFromText(text, 'section');
+                  return (
+                    <h3 id={id} {...props}>
+                      {children}
+                    </h3>
+                  );
+                },
+              }}
+            >
               {post.content}
             </ReactMarkdown>
           </div>

@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "prebuild": "node scripts/generate-sitemap.mjs",
+    "prebuild": "node scripts/generate-sitemap.mjs && node scripts/generate-prerendered-posts.mjs && node scripts/generate-discovery-pages.mjs",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
