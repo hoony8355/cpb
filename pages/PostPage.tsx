@@ -330,7 +330,7 @@ const PostPage: React.FC = () => {
       </Helmet>
 
       <div className="container mx-auto px-4 py-8 md:py-10">
-        <article className="max-w-3xl mx-auto content-card p-5 md:p-8">
+        <article className="max-w-3xl mx-auto content-card p-5 md:p-8 overflow-hidden">
           <Breadcrumbs postTitle={post.title} />
 
           <header className="mb-8 pb-6 border-b border-slate-100">
@@ -355,7 +355,7 @@ const PostPage: React.FC = () => {
             {tableOfContents.length > 0 && (
               <nav
                 aria-label="Table of contents"
-                className="mb-8 rounded-xl border border-slate-200 bg-slate-50 p-4 not-prose sticky top-20 z-20"
+                className="mb-8 rounded-xl border border-slate-200 bg-slate-50 p-4 not-prose lg:sticky lg:top-24 z-20 max-h-[70vh] overflow-auto"
               >
                 <p className="text-sm font-semibold text-slate-700 mb-3">목차</p>
                 <ul className="space-y-2 text-sm">
@@ -384,8 +384,9 @@ const PostPage: React.FC = () => {
             {quickNextPost && (
               <aside className="not-prose mb-8 rounded-xl border border-sky-200 bg-gradient-to-r from-sky-50 to-cyan-50 p-4">
                 <p className="text-xs text-sky-700 font-semibold mb-2">다음 추천 글</p>
-                <Link to={`/post/${quickNextPost.slug}`} className="text-sky-900 font-semibold hover:underline">
+                <Link to={`/post/${quickNextPost.slug}`} className="text-sky-900 font-semibold hover:underline inline-flex items-center gap-1">
                   {quickNextPost.title}
+                  <span aria-hidden="true">→</span>
                 </Link>
               </aside>
             )}
@@ -403,7 +404,7 @@ const PostPage: React.FC = () => {
                   </thead>
                   <tbody>
                     {post.products.map((product, index) => (
-                      <tr key={index} className="border-t border-slate-100">
+                      <tr key={index} className="border-t border-slate-100 odd:bg-white even:bg-slate-50/40">
                         <td className="px-3 py-2 font-semibold">{index + 1}</td>
                         <td className="px-3 py-2">{product.name}</td>
                         <td className="px-3 py-2 text-slate-600">{product.description?.slice(0, 80)}</td>
