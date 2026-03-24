@@ -26,11 +26,34 @@ const escapeHtml = (value = '') =>
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#39;');
 
+const headingIdFromText = (text, fallback) => {
+  const normalized = String(text || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^\p{L}\p{N}\s-]/gu, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+
+  return normalized || fallback;
+};
+
+const extractHeadings = (markdown = '') => {
+  const headingRegex = /^(##|###)\s+(.+)$/gm;
+  const matches = Array.from(markdown.matchAll(headingRegex));
+  return matches.map((match, index) => {
+    const level = match[1].length;
+    const title = match[2].replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').trim();
+    const id = headingIdFromText(title, `section-${index + 1}`);
+    return { level, title, id };
+  });
+};
+
 const markdownToHtml = (markdown) => {
   const escaped = escapeHtml(markdown);
   return escaped
-    .replace(/^###\s+(.*)$/gm, '<h3>$1</h3>')
-    .replace(/^##\s+(.*)$/gm, '<h2>$1</h2>')
+    .replace(/^###\s+(.*)$/gm, (_, title) => `<h3 id="${headingIdFromText(title, 'section')}">${title}</h3>`)
+    .replace(/^##\s+(.*)$/gm, (_, title) => `<h2 id="${headingIdFromText(title, 'section')}">${title}</h2>`)
     .replace(/^#\s+(.*)$/gm, '<h1>$1</h1>')
     .replace(/^\s*[-*]\s+(.*)$/gm, '<li>$1</li>')
     .replace(/(<li>.*<\/li>\n?)+/g, (group) => `<ul>${group}</ul>`)
@@ -61,6 +84,7 @@ const renderPage = ({ slug, title, description, date, authorName, keywords, imag
   const safeDescription = escapeHtml(description || '');
   const safeAuthorName = escapeHtml(authorName || SITE_NAME);
   const renderedBody = markdownToHtml(content || '');
+  const tableOfContents = extractHeadings(content || '');
   const articleSchema = {
     '@type': 'BlogPosting',
     headline: title || 'Untitled Post',
@@ -116,10 +140,32 @@ const renderPage = ({ slug, title, description, date, authorName, keywords, imag
           })),
         }
       : null;
+  const tableOfContentsSchema =
+    tableOfContents.length > 0
+      ? {
+          '@type': 'ItemList',
+          name: `${title || 'Untitled Post'} 목차`,
+          itemListElement: tableOfContents.map((item, index) => ({
+            '@type': 'ListItem',
+            position: index + 1,
+            name: item.title,
+            url: `${canonicalUrl}#${item.id}`,
+          })),
+        }
+      : null;
   const schemaGraph = {
     '@context': 'https://schema.org',
-    '@graph': [articleSchema, breadcrumbSchema, faqSchema, productListSchema].filter(Boolean),
+    '@graph': [articleSchema, breadcrumbSchema, faqSchema, productListSchema, tableOfContentsSchema].filter(Boolean),
   };
+  const tocHtml =
+    tableOfContents.length > 0
+      ? `<nav aria-label="Table of contents" class="toc"><p class="toc-title">목차</p><ul>${tableOfContents
+          .map(
+            (item) =>
+              `<li class="${item.level === 3 ? 'toc-sub' : ''}"><a href="#${item.id}">${escapeHtml(item.title)}</a></li>`
+          )
+          .join('')}</ul></nav>`
+      : '';
 
   return `<!doctype html>
 <html lang="ko">
@@ -148,13 +194,16 @@ const renderPage = ({ slug, title, description, date, authorName, keywords, imag
     .meta { color: #6b7280; margin-bottom: 20px; }
     article { line-height: 1.75; background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
     ul { padding-left: 20px; }
+    .toc { margin-bottom: 20px; padding: 14px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; }
+    .toc-title { margin-top: 0; margin-bottom: 8px; font-weight: 700; }
+    .toc-sub { margin-left: 16px; }
   </style>
 </head>
 <body>
   <main class="container">
     <h1>${safeTitle}</h1>
     <p class="meta">${escapeHtml(new Date(date).toLocaleDateString('ko-KR'))} · ${safeAuthorName}</p>
-    <article><p>${renderedBody}</p></article>
+    <article>${tocHtml}<p>${renderedBody}</p></article>
   </main>
 </body>
 </html>`;

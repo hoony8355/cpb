@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -29,6 +29,23 @@ const slugify = (s: string) =>
     .replace(/^-|-$/g, '');
 
 const ORIGIN = 'https://cpb-five.vercel.app';
+const headingIdFromText = (text: string, fallback: string) => {
+  const normalized = text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\p{L}\p{N}\s-]/gu, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+
+  return normalized || fallback;
+};
+const extractPlainText = (value: React.ReactNode): string => {
+  if (typeof value === 'string' || typeof value === 'number') return String(value);
+  if (Array.isArray(value)) return value.map(extractPlainText).join('');
+  if (React.isValidElement(value)) return extractPlainText(value.props.children);
+  return '';
+};
 
 const PostPage: React.FC = () => {
   const { slug = '' } = useParams<{ slug: string }>();
@@ -113,6 +130,16 @@ const PostPage: React.FC = () => {
 
   const canonicalUrl = `${ORIGIN}/post/${post.slug}`;
   const keywords = Array.isArray(post.keywords) ? post.keywords.join(', ') : '';
+  const tableOfContents = useMemo(() => {
+    const headingRegex = /^(##|###)\s+(.+)$/gm;
+    const matches = Array.from(post.content.matchAll(headingRegex));
+    return matches.map((match, index) => {
+      const level = match[1].length;
+      const title = match[2].replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').trim();
+      const id = headingIdFromText(title, `section-${index + 1}`);
+      return { level, title, id };
+    });
+  }, [post.content]);
   const articleSchema = {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
@@ -192,9 +219,23 @@ const PostPage: React.FC = () => {
           })),
         }
       : null;
+  const tableOfContentsSchema =
+    tableOfContents.length > 0
+      ? {
+          '@context': 'https://schema.org',
+          '@type': 'ItemList',
+          name: `${post.title} 목차`,
+          itemListElement: tableOfContents.map((item, index) => ({
+            '@type': 'ListItem',
+            position: index + 1,
+            name: item.title,
+            url: `${canonicalUrl}#${item.id}`,
+          })),
+        }
+      : null;
   const schemaGraph = {
     '@context': 'https://schema.org',
-    '@graph': [articleSchema, breadcrumbSchema, faqSchema, productListSchema].filter(Boolean),
+    '@graph': [articleSchema, breadcrumbSchema, faqSchema, productListSchema, tableOfContentsSchema].filter(Boolean),
   };
 
   return (
@@ -232,7 +273,47 @@ const PostPage: React.FC = () => {
           )}
 
           <div className="prose prose-slate max-w-none lg:prose-lg mb-12">
-            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+            {tableOfContents.length > 0 && (
+              <nav
+                aria-label="Table of contents"
+                className="mb-8 rounded-lg border border-slate-200 bg-slate-50 p-4 not-prose"
+              >
+                <p className="text-sm font-semibold text-slate-700 mb-3">목차</p>
+                <ul className="space-y-2 text-sm">
+                  {tableOfContents.map((item, index) => (
+                    <li key={`${item.id}-${index}`} className={item.level === 3 ? 'ml-4' : ''}>
+                      <a href={`#${item.id}`} className="text-sky-700 hover:text-sky-900 hover:underline">
+                        {item.title}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
+            )}
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeRaw]}
+              components={{
+                h2: ({ children, ...props }) => {
+                  const text = extractPlainText(children);
+                  const id = headingIdFromText(text, 'section');
+                  return (
+                    <h2 id={id} {...props}>
+                      {children}
+                    </h2>
+                  );
+                },
+                h3: ({ children, ...props }) => {
+                  const text = extractPlainText(children);
+                  const id = headingIdFromText(text, 'section');
+                  return (
+                    <h3 id={id} {...props}>
+                      {children}
+                    </h3>
+                  );
+                },
+              }}
+            >
               {post.content}
             </ReactMarkdown>
           </div>
