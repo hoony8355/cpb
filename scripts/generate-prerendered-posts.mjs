@@ -49,16 +49,33 @@ const extractHeadings = (markdown = '') => {
   });
 };
 
+const sanitizePrerenderContent = (markdown = '') =>
+  markdown
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/```json[\s\S]*?```/gi, '')
+    .replace(/```ld\+json[\s\S]*?```/gi, '');
+
 const markdownToHtml = (markdown) => {
   const escaped = escapeHtml(markdown);
-  return escaped
+  const html = escaped
+    .replace(/```([\s\S]*?)```/g, (_, code) => `<pre><code>${code.trim()}</code></pre>`)
     .replace(/^###\s+(.*)$/gm, (_, title) => `<h3 id="${headingIdFromText(title, 'section')}">${title}</h3>`)
     .replace(/^##\s+(.*)$/gm, (_, title) => `<h2 id="${headingIdFromText(title, 'section')}">${title}</h2>`)
     .replace(/^#\s+(.*)$/gm, '<h1>$1</h1>')
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" loading="lazy" />')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
     .replace(/^\s*[-*]\s+(.*)$/gm, '<li>$1</li>')
     .replace(/(<li>.*<\/li>\n?)+/g, (group) => `<ul>${group}</ul>`)
-    .replace(/\n\n+/g, '</p><p>')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n{2,}/g, '</p><p>')
     .replace(/\n/g, '<br />');
+
+  return `<p>${html}</p>`
+    .replace(/<p>\s*(<h[1-6][\s\S]*?<\/h[1-6]>)\s*<\/p>/g, '$1')
+    .replace(/<p>\s*(<ul>[\s\S]*?<\/ul>)\s*<\/p>/g, '$1')
+    .replace(/<p>\s*(<pre>[\s\S]*?<\/pre>)\s*<\/p>/g, '$1')
+    .replace(/<p>\s*(<img [^>]+>)\s*<\/p>/g, '$1')
+    .replace(/<p>\s*<\/p>/g, '');
 };
 
 const listMarkdown = () =>
@@ -79,12 +96,13 @@ const cleanupPrerenderDir = () => {
 };
 
 const renderPage = ({ slug, title, description, date, authorName, keywords, image, content, faq, products }) => {
+  const sanitizedContent = sanitizePrerenderContent(content || '');
   const canonicalUrl = `${BASE_URL}/post/${slug}`;
   const safeTitle = escapeHtml(title || 'Untitled Post');
   const safeDescription = escapeHtml(description || '');
   const safeAuthorName = escapeHtml(authorName || SITE_NAME);
-  const renderedBody = markdownToHtml(content || '');
-  const tableOfContents = extractHeadings(content || '');
+  const renderedBody = markdownToHtml(sanitizedContent);
+  const tableOfContents = extractHeadings(sanitizedContent);
   const articleSchema = {
     '@type': 'BlogPosting',
     headline: title || 'Untitled Post',
@@ -194,6 +212,9 @@ const renderPage = ({ slug, title, description, date, authorName, keywords, imag
     .meta { color: #6b7280; margin-bottom: 20px; }
     article { line-height: 1.75; background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
     ul { padding-left: 20px; }
+    img { max-width: 100%; height: auto; border-radius: 12px; margin: 12px 0; }
+    pre { overflow-x: auto; background: #0f172a; color: #e2e8f0; padding: 12px; border-radius: 8px; }
+    a { color: #0369a1; }
     .toc { margin-bottom: 20px; padding: 14px; border: 1px solid #e2e8f0; border-radius: 10px; background: #f8fafc; }
     .toc-title { margin-top: 0; margin-bottom: 8px; font-weight: 700; }
     .toc-sub { margin-left: 16px; }
@@ -203,7 +224,7 @@ const renderPage = ({ slug, title, description, date, authorName, keywords, imag
   <main class="container">
     <h1>${safeTitle}</h1>
     <p class="meta">${escapeHtml(new Date(date).toLocaleDateString('ko-KR'))} · ${safeAuthorName}</p>
-    <article>${tocHtml}<p>${renderedBody}</p></article>
+    <article>${tocHtml}${renderedBody}</article>
   </main>
 </body>
 </html>`;
