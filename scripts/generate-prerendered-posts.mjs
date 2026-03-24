@@ -1,6 +1,11 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import matter from 'gray-matter';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 
 const ROOT = process.cwd();
 const POSTS_DIR = path.join(ROOT, 'posts');
@@ -55,28 +60,34 @@ const sanitizePrerenderContent = (markdown = '') =>
     .replace(/```json[\s\S]*?```/gi, '')
     .replace(/```ld\+json[\s\S]*?```/gi, '');
 
-const markdownToHtml = (markdown) => {
-  const escaped = escapeHtml(markdown);
-  const html = escaped
-    .replace(/```([\s\S]*?)```/g, (_, code) => `<pre><code>${code.trim()}</code></pre>`)
-    .replace(/^###\s+(.*)$/gm, (_, title) => `<h3 id="${headingIdFromText(title, 'section')}">${title}</h3>`)
-    .replace(/^##\s+(.*)$/gm, (_, title) => `<h2 id="${headingIdFromText(title, 'section')}">${title}</h2>`)
-    .replace(/^#\s+(.*)$/gm, '<h1>$1</h1>')
-    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" loading="lazy" />')
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>')
-    .replace(/^\s*[-*]\s+(.*)$/gm, '<li>$1</li>')
-    .replace(/(<li>.*<\/li>\n?)+/g, (group) => `<ul>${group}</ul>`)
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\n{2,}/g, '</p><p>')
-    .replace(/\n/g, '<br />');
-
-  return `<p>${html}</p>`
-    .replace(/<p>\s*(<h[1-6][\s\S]*?<\/h[1-6]>)\s*<\/p>/g, '$1')
-    .replace(/<p>\s*(<ul>[\s\S]*?<\/ul>)\s*<\/p>/g, '$1')
-    .replace(/<p>\s*(<pre>[\s\S]*?<\/pre>)\s*<\/p>/g, '$1')
-    .replace(/<p>\s*(<img [^>]+>)\s*<\/p>/g, '$1')
-    .replace(/<p>\s*<\/p>/g, '');
+const extractTextFromNode = (node) => {
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(extractTextFromNode).join('');
+  if (node && typeof node === 'object' && node.props?.children) return extractTextFromNode(node.props.children);
+  return '';
 };
+
+const markdownToHtml = (markdown) =>
+  renderToStaticMarkup(
+    React.createElement(
+      ReactMarkdown,
+      {
+        remarkPlugins: [remarkGfm],
+        rehypePlugins: [rehypeRaw],
+        components: {
+          h2: ({ children, ...props }) => {
+            const id = headingIdFromText(extractTextFromNode(children), 'section');
+            return React.createElement('h2', { ...props, id }, children);
+          },
+          h3: ({ children, ...props }) => {
+            const id = headingIdFromText(extractTextFromNode(children), 'section');
+            return React.createElement('h3', { ...props, id }, children);
+          },
+        },
+      },
+      markdown
+    )
+  );
 
 const listMarkdown = () =>
   fs.readdirSync(POSTS_DIR).filter((name) => name.toLowerCase().endsWith('.md'));
