@@ -38,7 +38,11 @@ export const getAllPosts = async (): Promise<Post[]> => {
 
   // ⚠️ Vite 기준: services/ 에서 posts/ 로 상대 경로
   // 기존 '/posts/*.md' 대신 '../posts/*.md'를 권장 (환경 따라 절대경로 슬래시는 깨질 수 있음)
-  const modules = import.meta.glob('../posts/*.md', { as: 'raw', eager: true });
+  const modules = import.meta.glob('../posts/*.md', {
+    query: '?raw',
+    import: 'default',
+    eager: true,
+  });
 
   const posts: Post[] = Object.entries(modules).map(([path, rawContent]) => {
     const rawFileName = path.split('/').pop()!.replace(/\.md$/i, '');
