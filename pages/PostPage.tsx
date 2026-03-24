@@ -113,23 +113,35 @@ const PostPage: React.FC = () => {
 
   const canonicalUrl = `${ORIGIN}/post/${post.slug}`;
   const keywords = Array.isArray(post.keywords) ? post.keywords.join(', ') : '';
+  const articleSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: post.title,
+    description: post.description,
+    datePublished: post.date,
+    dateModified: post.date,
+    author: {
+      '@type': 'Person',
+      name: post.author?.name || 'Trend Spotter 콘텐츠 팀',
+    },
+    mainEntityOfPage: canonicalUrl,
+    image: post.coverImage ? [post.coverImage] : undefined,
+    keywords,
+  };
 
   return (
     <>
-      {/* 기존 SEO 매니저 유지 + 캐노니컬/OG를 Helmet으로 보강 */}
       <SeoManager
         title={`${post.title} | Trend Spotter`}
         description={post.description}
         keywords={keywords}
+        canonicalUrl={canonicalUrl}
+        ogImage={post.coverImage}
+        type="article"
       />
 
       <Helmet>
-        <link rel="canonical" href={canonicalUrl} />
-        <meta property="og:url" content={canonicalUrl} />
-        <meta property="og:title" content={`${post.title} | Trend Spotter`} />
-        {post.description && <meta property="og:description" content={post.description} />}
-        {post.coverImage && <meta property="og:image" content={post.coverImage} />}
-        <meta name="robots" content="index,follow" />
+        <script type="application/ld+json">{JSON.stringify(articleSchema)}</script>
       </Helmet>
 
       <div className="container mx-auto px-4 py-8">

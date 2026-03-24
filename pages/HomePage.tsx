@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { getAllPosts } from '../services/postService';
 import { Post } from '../types';
 import BlogPostCard from '../components/BlogPostCard';
@@ -19,12 +20,26 @@ const HomePage: React.FC = () => {
         fetchPosts();
     }, []);
     
+    const siteUrl = 'https://cpb-five.vercel.app';
+    const websiteSchema = {
+      '@context': 'https://schema.org',
+      '@type': 'WebSite',
+      name: 'Trend Spotter',
+      url: siteUrl,
+      inLanguage: 'ko-KR',
+    };
+
     return (
         <div className="container mx-auto px-4 py-8">
             <SeoManager
               title="Trend Spotter - 최신 트렌드 및 상품 추천"
               description="최신 기술, 제품, 라이프스타일 트렌드를 분석하고 최고의 상품을 추천하는 블로그입니다. 현명한 소비를 위한 가이드를 만나보세요."
+              canonicalUrl={siteUrl}
+              type="website"
             />
+            <Helmet>
+                <script type="application/ld+json">{JSON.stringify(websiteSchema)}</script>
+            </Helmet>
             <div className="text-center mb-12">
                 <h1 className="text-4xl md:text-5xl font-extrabold text-gray-800 mb-2">Trend Spotter</h1>
                 <p className="text-lg text-gray-500">당신의 현명한 선택을 위한 최고의 가이드</p>
