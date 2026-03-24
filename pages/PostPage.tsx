@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -130,7 +130,7 @@ const PostPage: React.FC = () => {
 
   const canonicalUrl = `${ORIGIN}/post/${post.slug}`;
   const keywords = Array.isArray(post.keywords) ? post.keywords.join(', ') : '';
-  const tableOfContents = useMemo(() => {
+  const tableOfContents = (() => {
     const headingRegex = /^(##|###)\s+(.+)$/gm;
     const matches = Array.from(post.content.matchAll(headingRegex));
     return matches.map((match, index) => {
@@ -139,7 +139,7 @@ const PostPage: React.FC = () => {
       const id = headingIdFromText(title, `section-${index + 1}`);
       return { level, title, id };
     });
-  }, [post.content]);
+  })();
   const articleSchema = {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
