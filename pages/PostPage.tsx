@@ -335,6 +335,8 @@ const PostPage: React.FC = () => {
   };
   const activeSectionIndex = tableOfContents.findIndex((item) => item.id === activeSection);
   const nextSection = activeSectionIndex >= 0 ? tableOfContents[activeSectionIndex + 1] : tableOfContents[0];
+  const followUpSection = nextSection || tableOfContents[0];
+  const isLastSection = !nextSection && tableOfContents.length > 0;
 
   return (
     <>
@@ -355,7 +357,11 @@ const PostPage: React.FC = () => {
         <div
           className="h-full bg-gradient-to-r from-sky-500 to-cyan-500 transition-all duration-200"
           style={{ width: `${readingProgress}%` }}
-          aria-hidden="true"
+          role="progressbar"
+          aria-label="읽기 진행률"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={readingProgress}
         />
       </div>
 
@@ -392,11 +398,13 @@ const PostPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsMobileTocOpen((prev) => !prev)}
+                  aria-expanded={isMobileTocOpen}
+                  aria-controls="post-toc-list"
                   className="mb-3 inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 lg:hidden"
                 >
                   {isMobileTocOpen ? '목차 접기' : '목차 펼치기'}
                 </button>
-                <ul className={`space-y-2 text-sm ${isMobileTocOpen ? 'block' : 'hidden'} lg:block`}>
+                <ul id="post-toc-list" className={`space-y-2 text-sm ${isMobileTocOpen ? 'block' : 'hidden'} lg:block`}>
                   {tableOfContents.map((item, index) => (
                     <li key={`${item.id}-${index}`} className={item.level === 3 ? 'ml-4' : ''}>
                       <a
@@ -416,18 +424,19 @@ const PostPage: React.FC = () => {
                     <p className="text-sm text-slate-700">{sectionSummaries[activeSection]}</p>
                   </div>
                 )}
-                {nextSection && (
+                {followUpSection && (
                   <button
                     type="button"
                     onClick={() => {
-                      const element = document.getElementById(nextSection.id);
+                      const element = document.getElementById(followUpSection.id);
                       if (element) {
-                        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                        element.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
                       }
                     }}
                     className="mt-4 w-full rounded-md bg-sky-600 px-3 py-2 text-sm font-semibold text-white hover:bg-sky-700"
                   >
-                    다음 섹션 읽기: {nextSection.title}
+                    {isLastSection ? `처음으로 돌아가기: ${followUpSection.title}` : `다음 섹션 읽기: ${followUpSection.title}`}
                   </button>
                 )}
               </nav>
