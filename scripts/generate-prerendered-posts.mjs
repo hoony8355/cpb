@@ -55,15 +55,14 @@ const cleanupPrerenderDir = () => {
   fs.mkdirSync(PRERENDER_DIR, { recursive: true });
 };
 
-const renderPage = ({ slug, title, description, date, authorName, keywords, image, content }) => {
+const renderPage = ({ slug, title, description, date, authorName, keywords, image, content, faq, products }) => {
   const canonicalUrl = `${BASE_URL}/post/${slug}`;
   const safeTitle = escapeHtml(title || 'Untitled Post');
   const safeDescription = escapeHtml(description || '');
   const safeAuthorName = escapeHtml(authorName || SITE_NAME);
   const renderedBody = markdownToHtml(content || '');
   const articleSchema = {
-    '@context': 'https://schema.org',
-    '@type': 'Article',
+    '@type': 'BlogPosting',
     headline: title || 'Untitled Post',
     description: description || '',
     datePublished: date,
@@ -73,6 +72,53 @@ const renderPage = ({ slug, title, description, date, authorName, keywords, imag
     mainEntityOfPage: canonicalUrl,
     publisher: { '@type': 'Organization', name: SITE_NAME },
     keywords: Array.isArray(keywords) ? keywords.join(', ') : '',
+  };
+  const breadcrumbSchema = {
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: '홈', item: BASE_URL },
+      { '@type': 'ListItem', position: 2, name: title || 'Untitled Post', item: canonicalUrl },
+    ],
+  };
+  const faqSchema =
+    Array.isArray(faq) && faq.length > 0
+      ? {
+          '@type': 'FAQPage',
+          mainEntity: faq.map((item) => ({
+            '@type': 'Question',
+            name: item?.question || '',
+            acceptedAnswer: { '@type': 'Answer', text: item?.answer || '' },
+          })),
+        }
+      : null;
+  const productListSchema =
+    Array.isArray(products) && products.length > 0
+      ? {
+          '@type': 'ItemList',
+          itemListElement: products.map((product, index) => ({
+            '@type': 'ListItem',
+            position: index + 1,
+            item: {
+              '@type': 'Product',
+              name: product?.name || '',
+              description: product?.description || '',
+              url: product?.link || '',
+              image: product?.imageUrl || undefined,
+              aggregateRating:
+                product?.rating && product?.reviewCount
+                  ? {
+                      '@type': 'AggregateRating',
+                      ratingValue: product.rating,
+                      reviewCount: product.reviewCount,
+                    }
+                  : undefined,
+            },
+          })),
+        }
+      : null;
+  const schemaGraph = {
+    '@context': 'https://schema.org',
+    '@graph': [articleSchema, breadcrumbSchema, faqSchema, productListSchema].filter(Boolean),
   };
 
   return `<!doctype html>
@@ -94,7 +140,7 @@ const renderPage = ({ slug, title, description, date, authorName, keywords, imag
   <meta name="twitter:title" content="${safeTitle} | ${SITE_NAME}" />
   <meta name="twitter:description" content="${safeDescription}" />
   ${image ? `<meta name="twitter:image" content="${escapeHtml(image)}" />` : ''}
-  <script type="application/ld+json">${JSON.stringify(articleSchema)}</script>
+  <script type="application/ld+json">${JSON.stringify(schemaGraph)}</script>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 0; background: #f8fafc; color: #111827; }
     .container { max-width: 760px; margin: 0 auto; padding: 24px 16px 64px; }
@@ -134,6 +180,8 @@ const generatePrerenderPages = () => {
     const authorName = data.author?.name || SITE_NAME;
     const keywords = Array.isArray(data.keywords) ? data.keywords : [];
     const image = data.coverImage || detectCoverImage(content);
+    const faq = Array.isArray(data.faq) ? data.faq : [];
+    const products = Array.isArray(data.products) ? data.products : [];
     const publishedDate = data.date ? new Date(data.date).toISOString() : new Date().toISOString();
 
     const html = renderPage({
@@ -145,6 +193,8 @@ const generatePrerenderPages = () => {
       keywords,
       image,
       content,
+      faq,
+      products,
     });
 
     const outputDir = path.join(PRERENDER_DIR, slug);

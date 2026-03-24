@@ -115,7 +115,7 @@ const PostPage: React.FC = () => {
   const keywords = Array.isArray(post.keywords) ? post.keywords.join(', ') : '';
   const articleSchema = {
     '@context': 'https://schema.org',
-    '@type': 'Article',
+    '@type': 'BlogPosting',
     headline: post.title,
     description: post.description,
     datePublished: post.date,
@@ -124,9 +124,77 @@ const PostPage: React.FC = () => {
       '@type': 'Person',
       name: post.author?.name || 'Trend Spotter 콘텐츠 팀',
     },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Trend Spotter',
+      url: ORIGIN,
+    },
     mainEntityOfPage: canonicalUrl,
     image: post.coverImage ? [post.coverImage] : undefined,
     keywords,
+  };
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: '홈',
+        item: ORIGIN,
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: post.title,
+        item: canonicalUrl,
+      },
+    ],
+  };
+  const faqSchema =
+    post.faq && post.faq.length > 0
+      ? {
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: post.faq.map((item) => ({
+            '@type': 'Question',
+            name: item.question,
+            acceptedAnswer: {
+              '@type': 'Answer',
+              text: item.answer,
+            },
+          })),
+        }
+      : null;
+  const productListSchema =
+    post.products && post.products.length > 0
+      ? {
+          '@context': 'https://schema.org',
+          '@type': 'ItemList',
+          itemListElement: post.products.map((product, index) => ({
+            '@type': 'ListItem',
+            position: index + 1,
+            item: {
+              '@type': 'Product',
+              name: product.name,
+              description: product.description,
+              url: product.link,
+              image: product.imageUrl,
+              aggregateRating:
+                product.rating && product.reviewCount
+                  ? {
+                      '@type': 'AggregateRating',
+                      ratingValue: product.rating,
+                      reviewCount: product.reviewCount,
+                    }
+                  : undefined,
+            },
+          })),
+        }
+      : null;
+  const schemaGraph = {
+    '@context': 'https://schema.org',
+    '@graph': [articleSchema, breadcrumbSchema, faqSchema, productListSchema].filter(Boolean),
   };
 
   return (
@@ -141,7 +209,7 @@ const PostPage: React.FC = () => {
       />
 
       <Helmet>
-        <script type="application/ld+json">{JSON.stringify(articleSchema)}</script>
+        <script type="application/ld+json">{JSON.stringify(schemaGraph)}</script>
       </Helmet>
 
       <div className="container mx-auto px-4 py-8">
