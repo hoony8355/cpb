@@ -21,12 +21,29 @@ const HomePage: React.FC = () => {
     }, []);
     
     const siteUrl = 'https://cpb-five.vercel.app';
+    const organizationSchema = {
+      '@type': 'Organization',
+      '@id': `${siteUrl}#organization`,
+      name: 'Trend Spotter',
+      url: siteUrl,
+      logo: `${siteUrl}/logo%20(2).png`,
+    };
     const websiteSchema = {
-      '@context': 'https://schema.org',
       '@type': 'WebSite',
+      '@id': `${siteUrl}#website`,
       name: 'Trend Spotter',
       url: siteUrl,
       inLanguage: 'ko-KR',
+      publisher: { '@id': `${siteUrl}#organization` },
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: `${siteUrl}/?q={search_term_string}`,
+        'query-input': 'required name=search_term_string',
+      },
+    };
+    const schemaGraph = {
+      '@context': 'https://schema.org',
+      '@graph': [organizationSchema, websiteSchema],
     };
 
     return (
@@ -38,7 +55,7 @@ const HomePage: React.FC = () => {
               type="website"
             />
             <Helmet>
-                <script type="application/ld+json">{JSON.stringify(websiteSchema)}</script>
+                <script type="application/ld+json">{JSON.stringify(schemaGraph)}</script>
             </Helmet>
             <div className="text-center mb-12">
                 <h1 className="text-4xl md:text-5xl font-extrabold text-gray-800 mb-2">Trend Spotter</h1>

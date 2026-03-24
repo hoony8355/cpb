@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -57,6 +57,30 @@ const PostPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [video, setVideo] = useState<YouTubeVideo | null>(null);
+  const [activeSection, setActiveSection] = useState<string>('');
+
+  const tableOfContents = useMemo(() => {
+    if (!post) return [];
+    const headingRegex = /^(##|###)\s+(.+)$/gm;
+    const matches = Array.from(post.content.matchAll(headingRegex));
+    return matches.map((match, index) => {
+      const level = match[1].length;
+      const title = match[2].replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').trim();
+      const id = headingIdFromText(title, `section-${index + 1}`);
+      return { level, title, id };
+    });
+  }, [post]);
+
+  const readingTimeMinutes = useMemo(() => {
+    if (!post) return 1;
+    const plainText = post.content
+      .replace(/```[\s\S]*?```/g, ' ')
+      .replace(/!\[.*?\]\(.*?\)/g, ' ')
+      .replace(/\[([^\]]+)\]\((.*?)\)/g, '$1')
+      .replace(/[#>*`~-]/g, ' ');
+    const words = plainText.trim().split(/\s+/).filter(Boolean).length;
+    return Math.max(1, Math.ceil(words / 250));
+  }, [post]);
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -90,6 +114,33 @@ const PostPage: React.FC = () => {
 
     fetchPost();
   }, [cleanSlug, slug]);
+
+  useEffect(() => {
+    if (tableOfContents.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+
+        if (visible[0]?.target?.id) {
+          setActiveSection(visible[0].target.id);
+        }
+      },
+      {
+        rootMargin: '0px 0px -70% 0px',
+        threshold: [0.1, 0.5, 1.0],
+      }
+    );
+
+    tableOfContents.forEach((item) => {
+      const element = document.getElementById(item.id);
+      if (element) observer.observe(element);
+    });
+
+    return () => observer.disconnect();
+  }, [tableOfContents]);
 
   // 로딩
   if (loading) {
@@ -130,16 +181,6 @@ const PostPage: React.FC = () => {
 
   const canonicalUrl = `${ORIGIN}/post/${post.slug}`;
   const keywords = Array.isArray(post.keywords) ? post.keywords.join(', ') : '';
-  const tableOfContents = (() => {
-    const headingRegex = /^(##|###)\s+(.+)$/gm;
-    const matches = Array.from(post.content.matchAll(headingRegex));
-    return matches.map((match, index) => {
-      const level = match[1].length;
-      const title = match[2].replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').trim();
-      const id = headingIdFromText(title, `section-${index + 1}`);
-      return { level, title, id };
-    });
-  })();
   const articleSchema = {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
@@ -260,7 +301,7 @@ const PostPage: React.FC = () => {
           <header className="mb-8">
             <h1 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-3">{post.title}</h1>
             <p className="text-gray-500 text-sm">
-              {new Date(post.date).toLocaleDateString()} by {post.author.name}
+              {new Date(post.date).toLocaleDateString()} by {post.author.name} · 읽기 약 {readingTimeMinutes}분
             </p>
           </header>
 
@@ -282,7 +323,12 @@ const PostPage: React.FC = () => {
                 <ul className="space-y-2 text-sm">
                   {tableOfContents.map((item, index) => (
                     <li key={`${item.id}-${index}`} className={item.level === 3 ? 'ml-4' : ''}>
-                      <a href={`#${item.id}`} className="text-sky-700 hover:text-sky-900 hover:underline">
+                      <a
+                        href={`#${item.id}`}
+                        className={`hover:underline ${
+                          activeSection === item.id ? 'text-sky-900 font-semibold' : 'text-sky-700 hover:text-sky-900'
+                        }`}
+                      >
                         {item.title}
                       </a>
                     </li>
