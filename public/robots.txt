@@ -3,3 +3,4 @@ User-agent: *
 Allow: /
 
 Sitemap: https://cpb-five.vercel.app/sitemap.xml
+Host: cpb-five.vercel.app
