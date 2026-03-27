@@ -46,14 +46,17 @@
 ### Vercel에서 IndexNow 운영 순서
 1. `INDEXNOW_KEY`를 Vercel 환경변수로 설정
 2. `npm run indexnow:keyfile` 실행하여 `public/<key>.txt` 생성 후 배포
-3. `INDEXNOW_KEY_LOCATION=https://<대표도메인>/<key>.txt` 설정
+3. `INDEXNOW_KEY_LOCATION=https://<대표도메인>/<key>.txt` 설정 (예: `https://cpb-five.vercel.app/<key>.txt`)
 4. GitHub Secrets에 `INDEXNOW_KEY`, `INDEXNOW_KEY_LOCATION` 등록
-5. main 배포 후 워크플로우가 `SITEMAP_URL` 기준 URL들을 IndexNow에 일괄 전송
+5. GitHub Secret `SITE_URL`을 Vercel 대표 주소로 설정 (예: `https://cpb-five.vercel.app`)
+6. 워크플로우가 `${SITE_URL}/sitemap.xml` 기준 URL들을 IndexNow에 일괄 전송
 
 ### GitHub Pages 브랜치 운영 시
 - IndexNow 워크플로우는 모든 브랜치 push를 감지하고(`gh-pages` 제외) 동작하도록 설정되어 있어, 브랜치명이 바뀌어도 매번 워크플로우 파일을 수정할 필요가 없습니다.
 - `SITE_URL`은 `https://hoony8355.github.io/cpb` 로 설정하세요.
 - 프로젝트 페이지(`/cpb`) 구조에서는 `INDEXNOW_KEY_LOCATION`을 `https://hoony8355.github.io/cpb/<key>.txt`로 설정하면 해당 경로 하위 URL 전송에 사용할 수 있습니다.
+
+> 핵심: `SITE_URL`은 **실제 서비스 도메인**을 넣어야 하며, Vercel 운영이면 Vercel 도메인, GitHub Pages 운영이면 GitHub Pages 도메인을 입력합니다.
 
 ### INDEXNOW_KEY 추천 규칙
 - 허용 문자: `a-f`, `A-F`, `0-9`, `-`

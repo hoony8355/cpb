@@ -3,12 +3,17 @@ import process from 'node:process';
 const endpoint = 'https://searchadvisor.naver.com/indexnow';
 const key = process.env.INDEXNOW_KEY;
 const keyLocation = process.env.INDEXNOW_KEY_LOCATION;
-const siteUrl = process.env.SITE_URL || 'https://hoony8355.github.io/cpb';
-const sitemapUrl = process.env.SITEMAP_URL || `${siteUrl}/sitemap.xml`;
+const siteUrl = process.env.SITE_URL;
+const sitemapUrl = process.env.SITEMAP_URL || (siteUrl ? `${siteUrl.replace(/\/$/, '')}/sitemap.xml` : '');
 const maxUrls = Number(process.env.INDEXNOW_MAX_URLS || 500);
 
 if (!key) {
   console.error('INDEXNOW_KEY 환경변수가 필요합니다.');
+  process.exit(1);
+}
+
+if (!sitemapUrl) {
+  console.error('SITEMAP_URL 또는 SITE_URL 환경변수가 필요합니다.');
   process.exit(1);
 }
 
