@@ -3,7 +3,8 @@ import process from 'node:process';
 const endpoint = 'https://searchadvisor.naver.com/indexnow';
 const key = process.env.INDEXNOW_KEY;
 const keyLocation = process.env.INDEXNOW_KEY_LOCATION;
-const sitemapUrl = process.env.SITEMAP_URL || 'https://cpb-five.vercel.app/sitemap.xml';
+const siteUrl = process.env.SITE_URL || 'https://hoony8355.github.io/cpb';
+const sitemapUrl = process.env.SITEMAP_URL || `${siteUrl}/sitemap.xml`;
 const maxUrls = Number(process.env.INDEXNOW_MAX_URLS || 500);
 
 if (!key) {

@@ -11,7 +11,7 @@ if (!key) {
 }
 
 if (urls.length === 0) {
-  console.error('전송할 URL을 1개 이상 전달하세요. 예: node scripts/indexnow-submit.mjs https://cpb-five.vercel.app/post/slug');
+  console.error('전송할 URL을 1개 이상 전달하세요. 예: node scripts/indexnow-submit.mjs https://hoony8355.github.io/cpb/post/slug');
   process.exit(1);
 }
 

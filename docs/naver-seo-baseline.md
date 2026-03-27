@@ -49,3 +49,13 @@
 3. `INDEXNOW_KEY_LOCATION=https://<대표도메인>/<key>.txt` 설정
 4. GitHub Secrets에 `INDEXNOW_KEY`, `INDEXNOW_KEY_LOCATION` 등록
 5. main 배포 후 워크플로우가 `SITEMAP_URL` 기준 URL들을 IndexNow에 일괄 전송
+
+### GitHub Pages 브랜치 운영 시
+- Pages 소스 브랜치가 `codex/analyze-and-suggest-solutions-for-seo-issues-im8bsb`라면, IndexNow 워크플로우도 동일 브랜치 push 트리거를 포함해야 합니다.
+- `SITE_URL`은 `https://hoony8355.github.io/cpb` 로 설정하세요.
+- 프로젝트 페이지(`/cpb`) 구조에서는 `INDEXNOW_KEY_LOCATION`을 `https://hoony8355.github.io/cpb/<key>.txt`로 설정하면 해당 경로 하위 URL 전송에 사용할 수 있습니다.
+
+### INDEXNOW_KEY 추천 규칙
+- 허용 문자: `a-f`, `A-F`, `0-9`, `-`
+- 길이: 8~128자
+- 추천 예시: `b9f3a8e2-6d4c-4f0a-a9c1-7e3b2d4f8a1c`

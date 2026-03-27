@@ -11,8 +11,8 @@ if (!key) {
   process.exit(1);
 }
 
-if (!/^[A-Za-z0-9-]{8,128}$/.test(key)) {
-  console.error('INDEXNOW_KEY 형식이 유효하지 않습니다. (8~128자, 영문/숫자/-)');
+if (!/^[A-Fa-f0-9-]{8,128}$/.test(key)) {
+  console.error('INDEXNOW_KEY 형식이 유효하지 않습니다. (8~128자, a-f/A-F/0-9/-)');
   process.exit(1);
 }
 
