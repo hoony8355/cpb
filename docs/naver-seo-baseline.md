@@ -36,6 +36,16 @@
 
 ## 7) IndexNow (선택)
 - [x] 단건/다건 전송용 스크립트 추가: `npm run indexnow -- <url...>`
+- [x] 사이트맵 기반 일괄 전송 스크립트: `npm run indexnow:sitemap`
+- [x] key 파일 생성 스크립트: `npm run indexnow:keyfile`
 - [ ] 환경변수 설정
   - `INDEXNOW_KEY`
   - `INDEXNOW_KEY_LOCATION` (선택)
+- [ ] GitHub Actions secret 설정 후 `.github/workflows/indexnow.yml` 활성화
+
+### Vercel에서 IndexNow 운영 순서
+1. `INDEXNOW_KEY`를 Vercel 환경변수로 설정
+2. `npm run indexnow:keyfile` 실행하여 `public/<key>.txt` 생성 후 배포
+3. `INDEXNOW_KEY_LOCATION=https://<대표도메인>/<key>.txt` 설정
+4. GitHub Secrets에 `INDEXNOW_KEY`, `INDEXNOW_KEY_LOCATION` 등록
+5. main 배포 후 워크플로우가 `SITEMAP_URL` 기준 URL들을 IndexNow에 일괄 전송

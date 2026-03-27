@@ -140,7 +140,7 @@ const renderPage = ({ slug, title, description, date, authorName, keywords, imag
   const breadcrumbSchema = {
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: '홈', item: BASE_URL },
+      { '@type': 'ListItem', position: 1, name: 'Trend Spotter 블로그 메인', item: BASE_URL },
       { '@type': 'ListItem', position: 2, name: '제품 추천 아티클', item: `${BASE_URL}/all-posts.html` },
       { '@type': 'ListItem', position: 3, name: title || 'Untitled Post', item: canonicalUrl },
     ],
