@@ -4,8 +4,8 @@ import { Link } from 'react-router-dom';
 
 const Header: React.FC = () => {
   return (
-    <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-sm shadow-sm">
-      <div className="container mx-auto px-4 py-3">
+    <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/80 backdrop-blur-md shadow-sm">
+      <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <Link to="/" className="flex items-center gap-2 text-xl font-bold text-gray-800">
            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z" fill="#38bdf8"/>
@@ -14,6 +14,9 @@ const Header: React.FC = () => {
           </svg>
           <span className="bg-gradient-to-r from-sky-500 to-cyan-400 bg-clip-text text-transparent">Trend Spotter</span>
         </Link>
+        <span className="hidden md:inline-block text-xs text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+          추천 · 비교 · 트렌드
+        </span>
       </div>
     </header>
   );

@@ -4,7 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "prebuild": "node scripts/generate-sitemap.mjs",
+    "prebuild": "node scripts/generate-sitemap.mjs && node scripts/generate-prerendered-posts.mjs && node scripts/generate-discovery-pages.mjs && node scripts/generate-indexnow-key-file.mjs",
+    "indexnow:keyfile": "node scripts/generate-indexnow-key-file.mjs",
+    "indexnow": "node scripts/indexnow-submit.mjs",
+    "indexnow:sitemap": "node scripts/indexnow-submit-sitemap.mjs",
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"

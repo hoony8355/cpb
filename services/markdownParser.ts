@@ -8,7 +8,22 @@ import { Post, Author, Product, FaqItem } from '../types';
  * @returns A structured Post object.
  */
 export const parseMarkdown = (slug: string, rawContent: string): Post => {
-  const { data, content } = matter(rawContent);
+  let data: Record<string, any> = {};
+  let content = rawContent;
+
+  try {
+    const parsed = matter(rawContent);
+    data = parsed.data || {};
+    content = parsed.content ?? rawContent;
+  } catch (error) {
+    console.warn(`[markdownParser] frontmatter parse failed for slug="${slug}". Falling back to body-only parse.`, error);
+    if (rawContent.startsWith('---')) {
+      const secondFence = rawContent.indexOf('\n---', 3);
+      if (secondFence !== -1) {
+        content = rawContent.slice(secondFence + 4);
+      }
+    }
+  }
 
   // Coalesce frontmatter data with sensible defaults to ensure type safety.
   const author: Author = {

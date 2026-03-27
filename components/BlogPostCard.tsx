@@ -9,19 +9,22 @@ interface BlogPostCardProps {
 
 const BlogPostCard: React.FC<BlogPostCardProps> = ({ post }) => {
   return (
-    <Link to={`/post/${post.slug}`} className="block group bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300">
+    <Link
+      to={`/post/${post.slug}`}
+      className="block group bg-white rounded-xl border border-slate-200/80 shadow-sm overflow-hidden hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300"
+    >
       <div className="relative">
         <img 
           src={post.coverImage || 'https://source.unsplash.com/random/400x250?sig=' + post.slug} 
           alt={`Cover image for ${post.title}`}
-          className="w-full h-48 object-cover"
+          className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-[1.02]"
           loading="lazy"
           decoding="async"
         />
-        <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-colors duration-300"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent group-hover:from-black/45 transition-colors duration-300"></div>
       </div>
       <div className="p-6">
-        <h2 className="text-xl font-bold text-gray-800 mb-2 group-hover:text-sky-600 transition-colors duration-300">{post.title}</h2>
+        <h2 className="text-xl font-bold text-gray-800 mb-2 leading-snug group-hover:text-sky-600 transition-colors duration-300">{post.title}</h2>
         <p className="text-sm text-gray-500 mb-3">{new Date(post.date).toLocaleDateString()}</p>
         <p className="text-gray-600 text-sm mb-4 line-clamp-2">{post.description}</p>
         <div className="flex flex-wrap gap-2 mb-4">
