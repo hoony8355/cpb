@@ -50,6 +50,7 @@
 4. GitHub Secrets에 `INDEXNOW_KEY`, `INDEXNOW_KEY_LOCATION` 등록
 5. GitHub Secret `SITE_URL`을 Vercel 대표 주소로 설정 (예: `https://cpb-five.vercel.app`)
 6. 워크플로우가 `${SITE_URL}/sitemap.xml` 기준 URL들을 IndexNow에 일괄 전송
+7. `https://<대표도메인>/<key>.txt` 접속 시 key 문자열만 보이는지 확인 (메인 페이지 HTML이 나오면 rewrite 설정을 점검)
 
 ### GitHub Pages 브랜치 운영 시
 - IndexNow 워크플로우는 모든 브랜치 push를 감지하고(`gh-pages` 제외) 동작하도록 설정되어 있어, 브랜치명이 바뀌어도 매번 워크플로우 파일을 수정할 필요가 없습니다.

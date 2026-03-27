@@ -2,6 +2,7 @@
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/sitemap.xml" },
     { "source": "/robots.txt", "destination": "/robots.txt" },
+    { "source": "/(.*\\.txt)", "destination": "/$1" },
     { "source": "/all-posts.html", "destination": "/all-posts.html" },
     { "source": "/rss.xml", "destination": "/rss.xml" },
     { "source": "/(.*)", "destination": "/index.html" }

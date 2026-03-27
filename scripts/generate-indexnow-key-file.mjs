@@ -7,8 +7,8 @@ const PUBLIC_DIR = path.join(ROOT, 'public');
 const key = process.env.INDEXNOW_KEY;
 
 if (!key) {
-  console.error('INDEXNOW_KEY 환경변수가 필요합니다.');
-  process.exit(1);
+  console.log('INDEXNOW_KEY 미설정: key 파일 생성을 건너뜁니다.');
+  process.exit(0);
 }
 
 if (!/^[A-Fa-f0-9-]{8,128}$/.test(key)) {
