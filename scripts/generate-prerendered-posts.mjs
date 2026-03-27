@@ -60,6 +60,11 @@ const sanitizePrerenderContent = (markdown = '') =>
     .replace(/```json[\s\S]*?```/gi, '')
     .replace(/```ld\+json[\s\S]*?```/gi, '');
 
+const sanitizeFaqHtml = (html = '') =>
+  html
+    .replace(/<\/?(?!a\b|ol\b|ul\b|li\b)[^>]+>/gi, '')
+    .replace(/\s(on\w+|style)="[^"]*"/gi, '');
+
 const extractTextFromNode = (node) => {
   if (typeof node === 'string' || typeof node === 'number') return String(node);
   if (Array.isArray(node)) return node.map(extractTextFromNode).join('');
@@ -136,7 +141,8 @@ const renderPage = ({ slug, title, description, date, authorName, keywords, imag
     '@type': 'BreadcrumbList',
     itemListElement: [
       { '@type': 'ListItem', position: 1, name: '홈', item: BASE_URL },
-      { '@type': 'ListItem', position: 2, name: title || 'Untitled Post', item: canonicalUrl },
+      { '@type': 'ListItem', position: 2, name: '제품 추천 아티클', item: `${BASE_URL}/all-posts.html` },
+      { '@type': 'ListItem', position: 3, name: title || 'Untitled Post', item: canonicalUrl },
     ],
   };
   const faqSchema =
@@ -146,7 +152,7 @@ const renderPage = ({ slug, title, description, date, authorName, keywords, imag
           mainEntity: faq.map((item) => ({
             '@type': 'Question',
             name: item?.question || '',
-            acceptedAnswer: { '@type': 'Answer', text: item?.answer || '' },
+            acceptedAnswer: { '@type': 'Answer', text: sanitizeFaqHtml(item?.answer || '') },
           })),
         }
       : null;

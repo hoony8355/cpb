@@ -46,9 +46,26 @@ const HomePage: React.FC = () => {
         'query-input': 'required name=search_term_string',
       },
     };
+    const featuredPostsSchema =
+      posts.length > 2
+        ? {
+            '@type': 'ItemList',
+            name: 'Trend Spotter 추천 글',
+            itemListElement: posts.slice(0, 10).map((post, index) => ({
+              '@type': 'ListItem',
+              position: index + 1,
+              item: {
+                '@type': 'BlogPosting',
+                name: post.title,
+                url: `${siteUrl}/post/${post.slug}`,
+                image: post.coverImage || `${siteUrl}/logo%20(2).png`,
+              },
+            })),
+          }
+        : null;
     const schemaGraph = {
       '@context': 'https://schema.org',
-      '@graph': [organizationSchema, websiteSchema],
+      '@graph': [organizationSchema, websiteSchema, featuredPostsSchema].filter(Boolean),
     };
 
     return (

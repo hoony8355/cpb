@@ -47,6 +47,11 @@ const extractPlainText = (value: React.ReactNode): string => {
   return '';
 };
 
+const sanitizeFaqHtml = (html = '') =>
+  html
+    .replace(/<\/?(?!a\b|ol\b|ul\b|li\b)[^>]+>/gi, '')
+    .replace(/\s(on\w+|style)="[^"]*"/gi, '');
+
 const PostPage: React.FC = () => {
   const { slug = '' } = useParams<{ slug: string }>();
 
@@ -263,12 +268,18 @@ const PostPage: React.FC = () => {
       {
         '@type': 'ListItem',
         position: 1,
-        name: '홈',
+        name: 'Trend Spotter 블로그 메인',
         item: ORIGIN,
       },
       {
         '@type': 'ListItem',
         position: 2,
+        name: '제품 추천 아티클',
+        item: `${ORIGIN}/all-posts.html`,
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
         name: post.title,
         item: canonicalUrl,
       },
@@ -284,7 +295,7 @@ const PostPage: React.FC = () => {
             name: item.question,
             acceptedAnswer: {
               '@type': 'Answer',
-              text: item.answer,
+              text: sanitizeFaqHtml(item.answer),
             },
           })),
         }

@@ -28,3 +28,14 @@
 - [ ] 주요 페이지 noindex / nofollow 오설정 여부 점검
 - [ ] 웹마스터도구 리포트(노출/클릭/수집오류) 주기 점검
 
+## 6) 심화 구조화 데이터
+- [x] 루트 페이지 `Organization.sameAs` 지원 (`VITE_SOCIAL_CHANNELS` 사용)
+- [x] 포스트 페이지 `BreadcrumbList`를 페이지 계층형 키워드로 확장
+- [x] FAQ 답변은 허용 태그(`<a>`, `<ol>`, `<ul>`, `<li>`) 중심으로 정리
+- [x] 루트 페이지 최신 글 `ItemList`(캐러셀 대응) 구조화 데이터 추가
+
+## 7) IndexNow (선택)
+- [x] 단건/다건 전송용 스크립트 추가: `npm run indexnow -- <url...>`
+- [ ] 환경변수 설정
+  - `INDEXNOW_KEY`
+  - `INDEXNOW_KEY_LOCATION` (선택)
