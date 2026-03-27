@@ -64,6 +64,47 @@ products:
 
 > 참고: `reviews`/`ratingCount`는 현재 런타임 코드에 직접 반영되어 있지 않더라도, 생성기 출력 계약에 미리 포함하면 추후 `Review` 스키마 확장 시 재수집 없이 활용 가능.
 
+### 3.1 기존 생성 양식 호환 규칙 (중요)
+
+기존 생성기 출력 포맷(사용자 제공 샘플)을 그대로 사용할 수 있도록 아래 키를 표준으로 고정한다.
+
+```yaml
+schema_data:
+  products:
+    - name: string
+      url: string # 절대 URL
+      image: string # 절대 URL
+      brand: string
+      offer:
+        priceCurrency: "KRW"
+        price: number
+        availability: "https://schema.org/InStock"
+      review:
+        author: string
+        reviewBody: string
+      pros: [string]
+      cons: [string]
+      short_reason: string
+      caution: string
+      # 확장(선택)
+      ratingValue: number
+      reviewCount: number
+      ratingCount: number
+      reviews:
+        - reviewBody: string
+          ratingValue: number
+  faq:
+    - question: string
+      answer: string
+  breadcrumbs:
+    - name: string
+      url: string # 절대 URL
+  about:
+    keyword: string
+```
+
+`schema_data.products[*].image`는 현재 렌더 코드의 `product.imageUrl`과 연결되므로, 변환 시 `image -> imageUrl` 매핑 로직을 생성기 또는 후처리 단계에 두는 것을 권장한다.
+
 ---
 
 ## 4. 본문 구조 규칙 (Markdown Contract)
@@ -75,6 +116,83 @@ products:
 3. 표(table) 사용 시 Markdown 표 문법 사용 (prerender에서 wrap 처리)
 4. 외부 링크는 절대 URL 사용
 5. 리뷰/평점 문구는 숫자/특수문자만으로 구성된 텍스트 금지
+
+### 4.1 본문 섹션 순서 템플릿 (기존 양식 호환)
+
+아래 순서를 기본 골격으로 강제하면 품질 편차가 크게 줄어든다.
+
+1. 쿠팡 파트너스 고지 문구
+2. `## 빠른 결론 3줄`
+3. `## 어떤 기준으로 골랐는지`
+4. `## 가격대별 추천 요약표`
+5. `## 이런 사람에게 맞는 글 / 아닌 글`
+6. `## <키워드> 추천 상품 목록`
+   - `### 1. 상품명`
+   - 이미지
+   - 핵심 요약 문단
+   - 브랜드 / 평점·리뷰
+   - 추천 근거
+   - 추천 대상
+   - 주의할 점
+   - 대체 선택지
+   - CTA 링크
+7. `## 선택 팁 정리`
+8. `## 자주 묻는 질문 (FAQ)`
+9. `## 함께 보면 좋은 글`
+
+---
+
+## 4.2 금지/주의 규칙 (생성기 프롬프트에 반드시 포함)
+
+- frontmatter와 본문 사이 `---` 구분선 누락 금지
+- 동일 문단/문장 반복 금지 (특히 상품 설명 블록)
+- `breadcrumbs`의 `name`에 “홈/top” 단독 사용 금지  
+  (예: “Trend Spotter 블로그 메인”, “제품 추천 아티클”처럼 의미 있는 계층명 사용)
+- FAQ 답변은 `<a> <ol> <ul> <li>` 외 HTML 태그 남용 금지
+- `url`, `image`는 상대경로 금지, 단축 URL 금지
+
+---
+
+## 4.3 생성기 출력 예시 (축약)
+
+```md
+---
+title: "2026 양념갈비 추천 TOP 2 (가격·리뷰 기준)"
+date: "2026-03-26"
+description: "..."
+keywords: ["양념갈비", "양념갈비 추천", "양념갈비 비교"]
+schema_data:
+  products:
+    - name: "상품 A"
+      url: "https://..."
+      image: "https://..."
+      brand: "브랜드A"
+      offer:
+        priceCurrency: "KRW"
+        price: 59800
+        availability: "https://schema.org/InStock"
+      review:
+        author: "구매자 리뷰 요약"
+        reviewBody: "..."
+      pros: ["장점 1"]
+      cons: ["단점 1"]
+      short_reason: "핵심 추천 이유"
+      caution: "구매 전 주의점"
+  faq:
+    - question: "초보자는 무엇부터 봐야 하나요?"
+      answer: "..."
+  breadcrumbs:
+    - name: "Trend Spotter 블로그 메인"
+      url: "https://cpb-five.vercel.app"
+    - name: "2026 양념갈비 추천 TOP 2 (가격·리뷰 기준)"
+      url: "https://cpb-five.vercel.app/post/yangnyeomgalbi"
+  about:
+    keyword: "양념갈비"
+---
+
+## 빠른 결론 3줄
+...
+```
 
 ---
 
@@ -148,4 +266,3 @@ SITEMAP_URL: "https://cpb-five.vercel.app/sitemap.xml"
 > 우리 MD 생성기는 `posts/*.md`를 출력할 때 frontmatter 계약과 NAVER SEO 스키마 매핑을 충족해야 합니다.  
 > 특히 FAQ(question/answer), Breadcrumb용 카테고리 계층, ItemList용 항목(name/image/url), Product 평점/리뷰 데이터를 포함해 주세요.  
 > 브랜치/도메인은 하드코딩하지 말고 `DOC_BRANCH`, `CONTENT_BRANCH`, `DEPLOY_BRANCH`, `SITE_URL`, `SITEMAP_URL` 변수를 사용해 주세요.
-
