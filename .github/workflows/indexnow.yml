@@ -4,8 +4,9 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - main
-      - codex/analyze-and-suggest-solutions-for-seo-issues-im8bsb
+      - '**'
+    branches-ignore:
+      - gh-pages
 
 jobs:
   submit:

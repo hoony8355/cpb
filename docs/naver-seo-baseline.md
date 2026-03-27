@@ -51,7 +51,7 @@
 5. main 배포 후 워크플로우가 `SITEMAP_URL` 기준 URL들을 IndexNow에 일괄 전송
 
 ### GitHub Pages 브랜치 운영 시
-- Pages 소스 브랜치가 `codex/analyze-and-suggest-solutions-for-seo-issues-im8bsb`라면, IndexNow 워크플로우도 동일 브랜치 push 트리거를 포함해야 합니다.
+- IndexNow 워크플로우는 모든 브랜치 push를 감지하고(`gh-pages` 제외) 동작하도록 설정되어 있어, 브랜치명이 바뀌어도 매번 워크플로우 파일을 수정할 필요가 없습니다.
 - `SITE_URL`은 `https://hoony8355.github.io/cpb` 로 설정하세요.
 - 프로젝트 페이지(`/cpb`) 구조에서는 `INDEXNOW_KEY_LOCATION`을 `https://hoony8355.github.io/cpb/<key>.txt`로 설정하면 해당 경로 하위 URL 전송에 사용할 수 있습니다.
 
