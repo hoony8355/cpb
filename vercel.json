@@ -2,6 +2,9 @@
   "rewrites": [
     { "source": "/sitemap.xml", "destination": "/sitemap.xml" },
     { "source": "/robots.txt", "destination": "/robots.txt" },
+    { "source": "/(.*\\.txt)", "destination": "/$1" },
+    { "source": "/all-posts.html", "destination": "/all-posts.html" },
+    { "source": "/rss.xml", "destination": "/rss.xml" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
@@ -17,6 +20,14 @@
       "source": "/robots.txt",
       "headers": [
         { "key": "Content-Type", "value": "text/plain; charset=utf-8" },
+        { "key": "Cache-Control", "value": "public, max-age=0, s-maxage=0, must-revalidate" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" }
+      ]
+    },
+    {
+      "source": "/rss.xml",
+      "headers": [
+        { "key": "Content-Type", "value": "application/rss+xml; charset=utf-8" },
         { "key": "Cache-Control", "value": "public, max-age=0, s-maxage=0, must-revalidate" },
         { "key": "X-Content-Type-Options", "value": "nosniff" }
       ]

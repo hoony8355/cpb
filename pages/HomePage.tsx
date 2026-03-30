@@ -1,5 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { getAllPosts } from '../services/postService';
 import { Post } from '../types';
 import BlogPostCard from '../components/BlogPostCard';
@@ -19,15 +20,69 @@ const HomePage: React.FC = () => {
         fetchPosts();
     }, []);
     
+    const siteUrl = 'https://cpb-five.vercel.app';
+    const sameAsChannels = (import.meta.env.VITE_SOCIAL_CHANNELS || '')
+      .split(',')
+      .map((item: string) => item.trim())
+      .filter(Boolean);
+    const organizationSchema = {
+      '@type': 'Organization',
+      '@id': `${siteUrl}#organization`,
+      name: 'Trend Spotter',
+      url: siteUrl,
+      logo: `${siteUrl}/logo%20(2).png`,
+      sameAs: sameAsChannels.length > 0 ? sameAsChannels : undefined,
+    };
+    const websiteSchema = {
+      '@type': 'WebSite',
+      '@id': `${siteUrl}#website`,
+      name: 'Trend Spotter',
+      url: siteUrl,
+      inLanguage: 'ko-KR',
+      publisher: { '@id': `${siteUrl}#organization` },
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: `${siteUrl}/?q={search_term_string}`,
+        'query-input': 'required name=search_term_string',
+      },
+    };
+    const featuredPostsSchema =
+      posts.length > 2
+        ? {
+            '@type': 'ItemList',
+            name: 'Trend Spotter 추천 글',
+            itemListElement: posts.slice(0, 10).map((post, index) => ({
+              '@type': 'ListItem',
+              position: index + 1,
+              item: {
+                '@type': 'BlogPosting',
+                name: post.title,
+                url: `${siteUrl}/post/${post.slug}`,
+                image: post.coverImage || `${siteUrl}/logo%20(2).png`,
+              },
+            })),
+          }
+        : null;
+    const schemaGraph = {
+      '@context': 'https://schema.org',
+      '@graph': [organizationSchema, websiteSchema, featuredPostsSchema].filter(Boolean),
+    };
+
     return (
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-8 md:py-10">
             <SeoManager
               title="Trend Spotter - 최신 트렌드 및 상품 추천"
               description="최신 기술, 제품, 라이프스타일 트렌드를 분석하고 최고의 상품을 추천하는 블로그입니다. 현명한 소비를 위한 가이드를 만나보세요."
+              canonicalUrl={siteUrl}
+              type="website"
             />
+            <Helmet>
+                <script type="application/ld+json">{JSON.stringify(schemaGraph)}</script>
+            </Helmet>
             <div className="text-center mb-12">
                 <h1 className="text-4xl md:text-5xl font-extrabold text-gray-800 mb-2">Trend Spotter</h1>
                 <p className="text-lg text-gray-500">당신의 현명한 선택을 위한 최고의 가이드</p>
+                <p className="text-sm text-slate-400 mt-3">매일 업데이트되는 추천 콘텐츠를 한눈에 확인해보세요.</p>
             </div>
             {loading ? (
                 <div className="text-center">로딩 중...</div>
