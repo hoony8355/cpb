@@ -3,6 +3,12 @@ import { Post, Author, Product, FaqItem } from '../types';
 
 const stripQuotes = (value: string) => value.trim().replace(/^['"](.*)['"]$/, '$1').trim();
 
+const toIsoOrNow = (value: unknown): string => {
+  if (typeof value !== 'string' || !value.trim()) return new Date().toISOString();
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString();
+};
+
 const recoverFrontmatterScalars = (rawContent: string) => {
   if (!rawContent.startsWith('---')) return { data: {}, content: rawContent };
 
@@ -77,7 +83,7 @@ export const parseMarkdown = (slug: string, rawContent: string): Post => {
     slug,
     title: data.title || 'Untitled Post',
     description: data.description || '',
-    date: data.date ? new Date(data.date).toISOString() : new Date().toISOString(),
+    date: toIsoOrNow(data.date),
     keywords: data.keywords || [],
     author,
     content: content.trim(),

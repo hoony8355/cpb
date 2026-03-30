@@ -37,6 +37,12 @@ const markdownToPlainText = (markdown = '') =>
 
 const cdataSafe = (s = '') => s.replaceAll(']]>', ']]]]><![CDATA[>');
 
+const toValidDate = (value, fallbackDate) => {
+  if (!value) return fallbackDate;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? fallbackDate : parsed;
+};
+
 const recoverMatterFallback = (source) => {
   if (!source.startsWith('---')) return { data: {}, content: source };
   const secondFence = source.indexOf('\n---', 3);
@@ -77,7 +83,7 @@ const posts = fs
     const slug = slugify(decodeURIComponent(file.replace(/\.md$/i, '')));
     const title = data.title || slug;
     const description = data.description || '';
-    const date = data.date ? new Date(data.date) : fs.statSync(fullPath).mtime;
+    const date = toValidDate(data.date, fs.statSync(fullPath).mtime);
 
     return {
       slug,

@@ -112,6 +112,12 @@ const detectCoverImage = (content) => {
   return '';
 };
 
+const toIsoOrNow = (value) => {
+  if (!value) return new Date().toISOString();
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString();
+};
+
 const cleanupPrerenderDir = () => {
   fs.rmSync(PRERENDER_DIR, { recursive: true, force: true });
   fs.mkdirSync(PRERENDER_DIR, { recursive: true });
@@ -317,7 +323,7 @@ const generatePrerenderPages = () => {
     const image = data.coverImage || detectCoverImage(content);
     const faq = Array.isArray(data.faq) ? data.faq : [];
     const products = Array.isArray(data.products) ? data.products : [];
-    const publishedDate = data.date ? new Date(data.date).toISOString() : new Date().toISOString();
+    const publishedDate = toIsoOrNow(data.date);
 
     const html = renderPage({
       slug,
